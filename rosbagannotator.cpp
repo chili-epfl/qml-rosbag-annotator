@@ -84,10 +84,92 @@ void RosBagAnnotator::rewind(double time) {
 	setCurrentTime(currentTime() - time);
 }
 
-QVariant RosBagAnnotator::getCurrentValue(const QString &topic) {
-	if (mTopics.find(topic) == mTopics.end()) {
-		return QVariant();
+double RosBagAnnotator::findPreviousTime(const QString &topic) {
+	assert(mTopics.find(topic) != mTopics.end());
+
+	uint64_t prevTime = mCurrentTime;
+	const QString &type = mTopics[topic].toString();
+
+	if (type == "Bool") {
+		assert(mBoolMsgs.find(topic) != mBoolMsgs.end());
+		prevTime = previous(mBoolMsgs[topic]);
 	}
+	else if (type == "Float") {
+		assert(mFloatMsgs.find(topic) != mFloatMsgs.end());
+		prevTime = previous(mFloatMsgs[topic]);
+	}
+	else if (type == "Int") {
+		assert(mIntMsgs.find(topic) != mIntMsgs.end());
+		prevTime = previous(mIntMsgs[topic]);
+	}
+	else if (type == "String") {
+		assert(mStringMsgs.find(topic) != mStringMsgs.end());
+		prevTime = previous(mStringMsgs[topic]);
+	}
+	else if (type == "Vector2") {
+		assert(mVector2Msgs.find(topic) != mVector2Msgs.end());
+		prevTime = previous(mVector2Msgs[topic]);
+	}
+	else if (type == "Vector3") {
+		assert(mVector3Msgs.find(topic) != mVector3Msgs.end());
+		prevTime = previous(mVector3Msgs[topic]);
+	}
+	else if (type == "Audio") {
+		assert(mAudioMsgs.find(topic) != mAudioMsgs.end());
+		prevTime = previous(mAudioMsgs[topic]);
+	}
+	else if (type == "Image") {
+		assert(mImageMsgs.find(topic) != mImageMsgs.end());
+		prevTime = previous(mImageMsgs[topic]);
+	}
+
+	return std::max(1e-9 * (prevTime - mStartTime) - 1e-6, 0.0);
+}
+
+double RosBagAnnotator::findNextTime(const QString &topic) {
+	assert(mTopics.find(topic) != mTopics.end());
+
+	uint64_t nextTime = mCurrentTime;
+	const QString &type = mTopics[topic].toString();
+
+	if (type == "Bool") {
+		assert(mBoolMsgs.find(topic) != mBoolMsgs.end());
+		nextTime = next(mBoolMsgs[topic]);
+	}
+	else if (type == "Float") {
+		assert(mFloatMsgs.find(topic) != mFloatMsgs.end());
+		nextTime = next(mFloatMsgs[topic]);
+	}
+	else if (type == "Int") {
+		assert(mIntMsgs.find(topic) != mIntMsgs.end());
+		nextTime = next(mIntMsgs[topic]);
+	}
+	else if (type == "String") {
+		assert(mStringMsgs.find(topic) != mStringMsgs.end());
+		nextTime = next(mStringMsgs[topic]);
+	}
+	else if (type == "Vector2") {
+		assert(mVector2Msgs.find(topic) != mVector2Msgs.end());
+		nextTime = next(mVector2Msgs[topic]);
+	}
+	else if (type == "Vector3") {
+		assert(mVector3Msgs.find(topic) != mVector3Msgs.end());
+		nextTime = next(mVector3Msgs[topic]);
+	}
+	else if (type == "Audio") {
+		assert(mAudioMsgs.find(topic) != mAudioMsgs.end());
+		nextTime = next(mAudioMsgs[topic]);
+	}
+	else if (type == "Image") {
+		assert(mImageMsgs.find(topic) != mImageMsgs.end());
+		nextTime = next(mImageMsgs[topic]);
+	}
+
+	return std::min(1e-9 * (nextTime - mStartTime) + 1e-6, 1e-9 * (mEndTime - mStartTime));
+}
+
+QVariant RosBagAnnotator::getCurrentValue(const QString &topic) {
+	assert(mTopics.find(topic) != mTopics.end());
 
 	const QString &type = mTopics[topic].toString();
 	QVariant value;

@@ -69,6 +69,9 @@ public slots:
     void advance(double time);
     void rewind(double time);
 
+    double findPreviousTime(const QString &topic);
+    double findNextTime(const QString &topic);
+
     QVariant getCurrentValue(const QString &topic);
 
 signals:
@@ -135,6 +138,32 @@ private:
                 current[topic] = list.at(index).second;
             }
         }
+    }
+
+    template<class T>
+    uint64_t next(const QList<QPair<uint64_t, T>>& messages) {
+        for (auto it = messages.begin(); it != messages.end(); ++it) {
+            if (it->first <= mCurrentTime) {
+                continue;
+            }
+
+            return it->first;
+        }
+
+        return mCurrentTime;
+    }
+
+    template<class T>
+    uint64_t previous(const QList<QPair<uint64_t, T>>& messages) {
+        for (auto it = messages.rend(); it != messages.rbegin(); --it) {
+            if (it->first >= mCurrentTime) {
+                continue;
+            }
+
+            return it->first;
+        }
+
+        return mCurrentTime;
     }
 
     Status mStatus;
