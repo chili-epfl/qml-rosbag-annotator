@@ -24,7 +24,7 @@ ScrollView {
 		RosBagAnnotator {
 			id: annotator
 
-	        Component.onCompleted: bagAnnotator = annotator
+			Component.onCompleted: bagAnnotator = annotator
 		}
 
 		RowLayout {

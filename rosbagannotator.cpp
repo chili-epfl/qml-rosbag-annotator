@@ -18,20 +18,20 @@
 #include <limits>
 
 RosBagAnnotator::RosBagAnnotator(QQuickItem *parent):
-    QQuickItem(parent),
-    mStatus(EMPTY),
-    mUseRosTime(false),
-    mStartTime(0),
-    mEndTime(0),
-    mCurrentTime(0)
+	QQuickItem(parent),
+	mStatus(EMPTY),
+	mUseRosTime(false),
+	mStartTime(0),
+	mEndTime(0),
+	mCurrentTime(0)
 {
-    // By default, QQuickItem does not draw anything. If you subclass
-    // QQuickItem to create a visual item, you will need to uncomment the
-    // following line and re-implement updatePaintNode()
+	// By default, QQuickItem does not draw anything. If you subclass
+	// QQuickItem to create a visual item, you will need to uncomment the
+	// following line and re-implement updatePaintNode()
 
-    // setFlag(ItemHasContents, true);
+	// setFlag(ItemHasContents, true);
 
-    connect(&mMediaPlayer, &QMediaPlayer::stateChanged, this, &RosBagAnnotator::playerStateChanged);
+	connect(&mMediaPlayer, &QMediaPlayer::stateChanged, this, &RosBagAnnotator::playerStateChanged);
 }
 
 RosBagAnnotator::~RosBagAnnotator()
@@ -39,13 +39,13 @@ RosBagAnnotator::~RosBagAnnotator()
 }
 
 void RosBagAnnotator::setBagPath(QString path) {
-    mBagPath = path;
-    emit bagPathChanged(mBagPath);
+	mBagPath = path;
+	emit bagPathChanged(mBagPath);
 
-    reset();
+	reset();
 
-    if (!mBagPath.isEmpty()) {
-    	std::unique_ptr<rosbag::Bag> bag;
+	if (!mBagPath.isEmpty()) {
+		std::unique_ptr<rosbag::Bag> bag;
 		try {
 			bag.reset(new rosbag::Bag(mBagPath.toStdString()));
 		}
@@ -54,30 +54,30 @@ void RosBagAnnotator::setBagPath(QString path) {
 			return;
 		}
 
-    	parseBag(std::move(bag));
-    }
+		parseBag(std::move(bag));
+	}
 }
 
 void RosBagAnnotator::setCurrentTime(double time) {
-    mCurrentTime = mStartTime + static_cast<uint64_t>(1e9 * time);
+	mCurrentTime = mStartTime + static_cast<uint64_t>(1e9 * time);
 
-    if (mCurrentTime < mStartTime) {
-    	mCurrentTime = mStartTime;
-    }
-    else if (mCurrentTime > mEndTime) {
-    	mCurrentTime = mEndTime;
-    }
+	if (mCurrentTime < mStartTime) {
+		mCurrentTime = mStartTime;
+	}
+	else if (mCurrentTime > mEndTime) {
+		mCurrentTime = mEndTime;
+	}
 
-    seekCurrentMessageIndices(mBoolMsgs, mCurrentBool);
-    seekCurrentMessageIndices(mFloatMsgs, mCurrentFloat);
-    seekCurrentMessageIndices(mIntMsgs, mCurrentInt);
-    seekCurrentMessageIndices(mStringMsgs, mCurrentString);
-    seekCurrentMessageIndices(mVector2Msgs, mCurrentVector2);
-    seekCurrentMessageIndices(mVector3Msgs, mCurrentVector3);
-    seekCurrentMessageIndices(mAudioMsgs, mCurrentAudio);
-    seekCurrentMessageIndices(mImageMsgs, mCurrentImage);
+	seekCurrentMessageIndices(mBoolMsgs, mCurrentBool);
+	seekCurrentMessageIndices(mFloatMsgs, mCurrentFloat);
+	seekCurrentMessageIndices(mIntMsgs, mCurrentInt);
+	seekCurrentMessageIndices(mStringMsgs, mCurrentString);
+	seekCurrentMessageIndices(mVector2Msgs, mCurrentVector2);
+	seekCurrentMessageIndices(mVector3Msgs, mCurrentVector3);
+	seekCurrentMessageIndices(mAudioMsgs, mCurrentAudio);
+	seekCurrentMessageIndices(mImageMsgs, mCurrentImage);
 
-    emit currentTimeChanged(time);
+	emit currentTimeChanged(time);
 }
 
 void RosBagAnnotator::advance(double time) {
@@ -236,14 +236,14 @@ void RosBagAnnotator::playAudio(const QString &topic) {
 
 	// seek to correct position when setting up the buffer
 	// (QMediaPlayer can only seek asynchronously)
-    mAudioBuffer.setData(
-    	mAudioByteArrays[topic].constData() + currentIt->second, 
-    	mAudioByteArrays[topic].size() - currentIt->second
-    );
+	mAudioBuffer.setData(
+		mAudioByteArrays[topic].constData() + currentIt->second, 
+		mAudioByteArrays[topic].size() - currentIt->second
+	);
 
-    mAudioBuffer.open(QIODevice::ReadOnly);
-    mMediaPlayer.setMedia(QMediaContent(), &mAudioBuffer);
-    mMediaPlayer.play();
+	mAudioBuffer.open(QIODevice::ReadOnly);
+	mMediaPlayer.setMedia(QMediaContent(), &mAudioBuffer);
+	mMediaPlayer.play();
 }
 
 void RosBagAnnotator::stopAudio() {
@@ -290,10 +290,10 @@ void RosBagAnnotator::reset() {
 
 	mAudioByteArrays.clear();
 
-    emit lengthChanged(length());
-    emit topicsChanged(mTopics);
-    emit topicsByTypeChanged(mTopicsByType);
-    emit currentTimeChanged(0.0);
+	emit lengthChanged(length());
+	emit topicsChanged(mTopics);
+	emit topicsByTypeChanged(mTopicsByType);
+	emit currentTimeChanged(0.0);
 
 	mStatus = EMPTY;
 	emit statusChanged(mStatus);
@@ -308,25 +308,25 @@ void RosBagAnnotator::parseBag(std::unique_ptr<rosbag::Bag> &&bag) {
 
 	rosbag::View view(*bag);
 
-    for (auto it = view.begin(); it != view.end(); ++it)
-    {
-    	extractMessage(*it);
-    }
+	for (auto it = view.begin(); it != view.end(); ++it)
+	{
+		extractMessage(*it);
+	}
 
-    mCurrentTime = mStartTime;
+	mCurrentTime = mStartTime;
 
-    sortMessages(mBoolMsgs);
-    sortMessages(mFloatMsgs);
-    sortMessages(mIntMsgs);
-    sortMessages(mStringMsgs);
-    sortMessages(mVector2Msgs);
-    sortMessages(mVector3Msgs);
+	sortMessages(mBoolMsgs);
+	sortMessages(mFloatMsgs);
+	sortMessages(mIntMsgs);
+	sortMessages(mStringMsgs);
+	sortMessages(mVector2Msgs);
+	sortMessages(mVector3Msgs);
 
-    emit lengthChanged(length());
-    emit topicsChanged(mTopics);
-    emit topicsByTypeChanged(mTopicsByType);
+	emit lengthChanged(length());
+	emit topicsChanged(mTopics);
+	emit topicsByTypeChanged(mTopicsByType);
 
-    setCurrentTime(0.0);
+	setCurrentTime(0.0);
 
 	mStatus = READY;
 	emit statusChanged(mStatus);

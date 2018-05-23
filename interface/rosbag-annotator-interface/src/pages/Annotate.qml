@@ -22,79 +22,79 @@ ScrollView {
 		spacing: 4
 
 		ImageItem {
-	        id: imageItem
-	        Layout.alignment: Qt.AlignCenter
+			id: imageItem
+			Layout.alignment: Qt.AlignCenter
 
-	        width: 640
-	        height: 480
-	    }
+			width: 640
+			height: 480
+		}
 
-    	Text {
-    		Layout.alignment: Qt.AlignCenter
-    		text: bagAnnotator != undefined ? "Current time: " + bagAnnotator.currentTime.toFixed(2) : ""
-    	}
+		Text {
+			Layout.alignment: Qt.AlignCenter
+			text: bagAnnotator != undefined ? "Current time: " + bagAnnotator.currentTime.toFixed(2) : ""
+		}
 
-    	Rectangle {
-	        id: progressBar
+		Rectangle {
+			id: progressBar
 
-	        anchors.left: parent.left
-	        anchors.right: parent.right
-	        anchors.margins: 100
+			anchors.left: parent.left
+			anchors.right: parent.right
+			anchors.margins: 100
 
-	        height: 30
+			height: 30
 
-	        color: "lightGray"
+			color: "lightGray"
 
-	        Rectangle {
-	            anchors.left: parent.left
-	            anchors.top: parent.top
-	            anchors.bottom: parent.bottom
+			Rectangle {
+				anchors.left: parent.left
+				anchors.top: parent.top
+				anchors.bottom: parent.bottom
 
-	            width: bagAnnotator != undefined ? parent.width * bagAnnotator.currentTime / bagAnnotator.length : 0
+				width: bagAnnotator != undefined ? parent.width * bagAnnotator.currentTime / bagAnnotator.length : 0
 
-	            color: "darkGray"
-	        }
+				color: "darkGray"
+			}
 
-	        MouseArea {
-	            anchors.fill: parent
-	            onClicked: {
-	            	seek(bagAnnotator.length * mouse.x / width);
-	            }
-	        }
-	    }
+			MouseArea {
+				anchors.fill: parent
+				onClicked: {
+					seek(bagAnnotator.length * mouse.x / width);
+				}
+			}
+		}
 
-	    RowLayout {
+		RowLayout {
 			spacing: 4
 			Layout.margins: 8
 			Layout.preferredWidth: 1280
 			Layout.fillWidth: true
 
-		    Button {
-		    	text: "Reset"
-		    	onClicked: seek(0)
-		    }
+			Button {
+				text: "Reset"
+				onClicked: seek(0)
+			}
 
-		    Button {
-		    	id: playPauseButton
-		    	text: "Play"
-		    	onClicked: {
-		    		if (text === "Play") {
-		    			play()
-		    		}
-		    		else {
-		    			pause()
-		    		}
-		    	}
-		    }
+			Button {
+				id: playPauseButton
+				text: "Play"
+				onClicked: {
+					if (text === "Play") {
+						play()
+					}
+					else {
+						pause()
+					}
+				}
+			}
 
-		    Button {
-		    	text: "Advance 1s"
-		    	onClicked: advance(1.0)
-		    }
+			Button {
+				text: "Advance 1s"
+				onClicked: advance(1.0)
+			}
 
-		    Button {
-		    	text: "Add annotation"
-		    }
+			Button {
+				text: "Add annotation"
+			}
 		}
 
 		GridLayout {
@@ -156,33 +156,33 @@ ScrollView {
 
 	Timer {
 		id: playTimer
-        interval: 10;
-        running: false;
-        repeat: true
-        onTriggered: {
-        	advance(interval * 1e-3)
+		interval: 10;
+		running: false;
+		repeat: true
+		onTriggered: {
+			advance(interval * 1e-3)
 
-        	if (!bagAnnotator.audioPlaying) {
-        		bagAnnotator.playAudio(audioTopic)
-        	}
-        }
-    }
+			if (!bagAnnotator.audioPlaying) {
+				bagAnnotator.playAudio(audioTopic)
+			}
+		}
+	}
 
-    function load() {
-    	update()
-    	bagAnnotator.onCurrentTimeChanged.connect(update)
-    }
+	function load() {
+		update()
+		bagAnnotator.onCurrentTimeChanged.connect(update)
+	}
 
-    function update(time){
-    	imageItem.setImage(bagAnnotator.getCurrentValue(imageTopic))
-    	for (var i = 0; i < otherTopicsRepeater.count; ++i) {
-    		otherTopicsRepeater.itemAt(i).children[1].text = String(bagAnnotator.getCurrentValue(Object.keys(otherTopics)[i]))
-    	}
-    }
+	function update(time){
+		imageItem.setImage(bagAnnotator.getCurrentValue(imageTopic))
+		for (var i = 0; i < otherTopicsRepeater.count; ++i) {
+			otherTopicsRepeater.itemAt(i).children[1].text = String(bagAnnotator.getCurrentValue(Object.keys(otherTopics)[i]))
+		}
+	}
 
 	function reset() {
 		pause()
-	    bagAnnotator.setCurrentTime(0)
+		bagAnnotator.setCurrentTime(0)
 	}
 
 	function play() {
@@ -190,7 +190,7 @@ ScrollView {
 			playPauseButton.text = "Pause"
 		}
 
-	    playTimer.start()
+		playTimer.start()
 	}
 
 	function pause() {
@@ -198,16 +198,16 @@ ScrollView {
 			playPauseButton.text = "Play"
 		}
 
-	    playTimer.stop()
+		playTimer.stop()
 		bagAnnotator.stopAudio()
 	}
 
-    function advance(time) {
-    	bagAnnotator.advance(time)
-    }
+	function advance(time) {
+		bagAnnotator.advance(time)
+	}
 
-    function seek(position) {
+	function seek(position) {
 		bagAnnotator.setCurrentTime(position)
 		bagAnnotator.stopAudio()
-    }
+	}
 }
