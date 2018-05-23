@@ -16,6 +16,7 @@ ScrollView {
 	property var imageTopic
 	property var audioTopic
 	property var otherTopics
+	property real playbackFreq: 30.0
 
 	ColumnLayout {
 		anchors.fill: parent
@@ -78,11 +79,11 @@ ScrollView {
 				id: playPauseButton
 				text: "Play"
 				onClicked: {
-					if (text === "Play") {
-						play()
+					if (bagAnnotator.playing) {
+						pause()
 					}
 					else {
-						pause()
+						play()
 					}
 				}
 			}
@@ -154,60 +155,55 @@ ScrollView {
 		}
 	}
 
-	Timer {
-		id: playTimer
-		interval: 10;
-		running: false;
-		repeat: true
-		onTriggered: {
-			advance(interval * 1e-3)
-
-			if (!bagAnnotator.audioPlaying) {
-				bagAnnotator.playAudio(audioTopic)
-			}
-		}
-	}
-
 	function load() {
-		update()
-		bagAnnotator.onCurrentTimeChanged.connect(update)
+		updateValues()
+		bagAnnotator.onCurrentTimeChanged.connect(updateValues)
+		bagAnnotator.onPlayingChanged.connect(updatePlayPauseButtonState)
 	}
 
-	function update(time){
+	function updateValues(time){
 		imageItem.setImage(bagAnnotator.getCurrentValue(imageTopic))
 		for (var i = 0; i < otherTopicsRepeater.count; ++i) {
 			otherTopicsRepeater.itemAt(i).children[1].text = String(bagAnnotator.getCurrentValue(Object.keys(otherTopics)[i]))
 		}
 	}
 
-	function reset() {
-		pause()
-		bagAnnotator.setCurrentTime(0)
+	function updatePlayPauseButtonState(playing){
+		if (playing) {
+			playPauseButton.text = "Pause"
+		}
+		else {
+			playPauseButton.text = "Play"			
+		}
 	}
 
 	function play() {
-		if (playPauseButton.text === "Play") {
-			playPauseButton.text = "Pause"
-		}
-
-		playTimer.start()
+		bagAnnotator.play(playbackFreq, audioTopic)
 	}
 
 	function pause() {
-		if (playPauseButton.text === "Pause") {
-			playPauseButton.text = "Play"
-		}
-
-		playTimer.stop()
-		bagAnnotator.stopAudio()
+		bagAnnotator.stop()
 	}
 
 	function advance(time) {
+		var playing = bagAnnotator.playing
+
+		bagAnnotator.stop()
 		bagAnnotator.advance(time)
+
+		if (playing) {
+			bagAnnotator.play(playbackFreq, audioTopic)
+		}
 	}
 
 	function seek(position) {
+		var playing = bagAnnotator.playing
+
+		bagAnnotator.stop()
 		bagAnnotator.setCurrentTime(position)
-		bagAnnotator.stopAudio()
+
+		if (playing) {
+			bagAnnotator.play(playbackFreq, audioTopic)
+		}
 	}
 }

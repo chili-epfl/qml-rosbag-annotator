@@ -31,7 +31,7 @@ RosBagAnnotator::RosBagAnnotator(QQuickItem *parent):
 
 	// setFlag(ItemHasContents, true);
 
-	connect(&mMediaPlayer, &QMediaPlayer::stateChanged, this, &RosBagAnnotator::playerStateChanged);
+	connect(&mPlaybackTimer, &QTimer::timeout, this, &RosBagAnnotator::updatePlayback);
 }
 
 RosBagAnnotator::~RosBagAnnotator()
@@ -214,53 +214,43 @@ QVariant RosBagAnnotator::getCurrentValue(const QString &topic) {
 	return value;
 }
 
-void RosBagAnnotator::playAudio(const QString &topic) {
-	stopAudio();
+void RosBagAnnotator::play(double frequency, const QString &audioTopic) {
+	stop();
 
-	// check for existence of topic
-	auto it = mAudioMsgs.find(topic);
-	if (it == mAudioMsgs.end()) {
-		return;
-	}
+	mPlaybackStartTime = mCurrentTime;
+	mAudioTopic = audioTopic;
+	
+	mPlaybackTimer.setTimerType(Qt::PreciseTimer);
+	mPlaybackTimer.setInterval(1e3 / frequency);
 
-	// check if audio has ended
-	if (it->rbegin()->first < mCurrentTime) {
-		return;
-	}
+	mPlaybackElapsedTimer.start();
+	mPlaybackTimer.start();
 
-	// check if audio has started
-	auto currentIt = mCurrentAudio[topic];
-	if (currentIt < it->begin()) {
-		return;
-	}
-
-	// seek to correct position when setting up the buffer
-	// (QMediaPlayer can only seek asynchronously)
-	mAudioBuffer.setData(
-		mAudioByteArrays[topic].constData() + currentIt->second, 
-		mAudioByteArrays[topic].size() - currentIt->second
-	);
-
-	mAudioBuffer.open(QIODevice::ReadOnly);
-	mMediaPlayer.setMedia(QMediaContent(), &mAudioBuffer);
-	mMediaPlayer.play();
+	emit playingChanged(true);
 }
 
-void RosBagAnnotator::stopAudio() {
-	if (audioPlaying()) {
-		mMediaPlayer.stop();
-	}
+void RosBagAnnotator::stop() {
+	mPlaybackTimer.stop();
+
+	mMediaPlayer.stop();
+	mMediaPlayer.setMedia(QMediaContent());
+	mAudioBuffer.close();
+
+	emit playingChanged(false);
 }
 
-void RosBagAnnotator::playerStateChanged(QMediaPlayer::State state) {
-	if (state == QMediaPlayer::PlayingState) {
-		emit audioPlayingChanged(true);
+void RosBagAnnotator::updatePlayback() {
+	uint64_t currentTime = mPlaybackStartTime + mPlaybackElapsedTimer.nsecsElapsed();
+
+	if (currentTime > mEndTime) {
+		stop();
 	}
 	else {
-		mMediaPlayer.setMedia(QMediaContent());
-		mAudioBuffer.close();
+		setCurrentTime(1e-9 * (currentTime - mStartTime));
 
-		emit audioPlayingChanged(false);
+		if (mMediaPlayer.state() != QMediaPlayer::PlayingState) {
+			playAudio(mAudioTopic);
+		}
 	}
 }
 
@@ -441,4 +431,36 @@ void RosBagAnnotator::extractMessage(const rosbag::MessageInstance &msg) {
 	if (time > mEndTime) {
 		mEndTime = time;
 	}
+}
+
+void RosBagAnnotator::playAudio(const QString &audioTopic) {
+	// check for existence of topic
+	auto it = mAudioMsgs.find(audioTopic);
+	if (it == mAudioMsgs.end()) {
+		return;
+	}
+
+	// check if audio has ended
+	if (it->rbegin()->first < mCurrentTime) {
+		return;
+	}
+
+	// check if audio has started
+	auto currentIt = mCurrentAudio[audioTopic];
+	if (currentIt < it->begin()) {
+		return;
+	}
+
+	qDebug() << "Playing audio from topic" << audioTopic;
+
+	// seek to correct position when setting up the buffer
+	// (QMediaPlayer can only seek asynchronously)
+	mAudioBuffer.setData(
+		mAudioByteArrays[audioTopic].constData() + currentIt->second, 
+		mAudioByteArrays[audioTopic].size() - currentIt->second
+	);
+
+	mAudioBuffer.open(QIODevice::ReadOnly);
+	mMediaPlayer.setMedia(QMediaContent(), &mAudioBuffer);
+	mMediaPlayer.play();
 }

@@ -5,6 +5,8 @@
 #include <QBuffer>
 #include <QImage>
 #include <QMediaPlayer>
+#include <QTimer>
+#include <QElapsedTimer>
 #include <QVector2D>
 #include <QVector3D>
 
@@ -28,7 +30,7 @@ class RosBagAnnotator : public QQuickItem
 	Q_PROPERTY(double currentTime READ currentTime WRITE setCurrentTime NOTIFY currentTimeChanged)
 	Q_PROPERTY(QVariantMap topics READ topics NOTIFY topicsChanged)
 	Q_PROPERTY(QVariantMap topicsByType READ topicsByType NOTIFY topicsByTypeChanged)
-	Q_PROPERTY(bool audioPlaying READ audioPlaying NOTIFY audioPlayingChanged)
+	Q_PROPERTY(bool playing READ playing NOTIFY playingChanged)
 
 public:
 	enum Status {
@@ -48,7 +50,7 @@ public:
 	double currentTime() const { return 1e-9 * (mCurrentTime - mStartTime); }
 	const QVariantMap &topics() const { return mTopics; }
 	const QVariantMap &topicsByType() const { return mTopicsByType; }
-	bool audioPlaying() const { return mMediaPlayer.state() == QMediaPlayer::PlayingState; }
+	bool playing() const { return mMediaPlayer.state() == QMediaPlayer::PlayingState; }
 
 public slots:
 	void setBagPath(QString path);
@@ -66,8 +68,8 @@ public slots:
 
 	QVariant getCurrentValue(const QString &topic);
 
-	void playAudio(const QString &topic);
-	void stopAudio();
+	void play(double frequency, const QString &audioTopic);
+	void stop();
 
 signals:
 	void statusChanged(Status status);
@@ -77,16 +79,16 @@ signals:
 	void currentTimeChanged(double time);
 	void topicsChanged(const QVariantMap &topics);
 	void topicsByTypeChanged(const QVariantMap &topicsByType);
-	void audioPlayingChanged(bool playing);
+	void playingChanged(bool playing);
 
 private slots:
-	void playerStateChanged(QMediaPlayer::State state);
+	void updatePlayback();
 
 private:
 	void reset();
 	void parseBag(std::unique_ptr<rosbag::Bag> &&bag);
 	void extractMessage(const rosbag::MessageInstance &msg);
-	void updateCurrentItems();
+	void playAudio(const QString &audioTopic);
 
 	template<class T>
 	uint64_t extractChiliMessageTime(const T msg) {
@@ -160,6 +162,10 @@ private:
 	uint64_t mStartTime;
 	uint64_t mEndTime;
 	uint64_t mCurrentTime;
+	uint64_t mPlaybackStartTime;
+
+	QTimer mPlaybackTimer;
+	QElapsedTimer mPlaybackElapsedTimer;
 
 	QVariantMap mTopics;
 	QVariantMap mTopicsByType;
@@ -183,6 +189,8 @@ private:
 	QMap<QString, QList<QPair<uint64_t, QImage>>> mImageMsgs;
 
 	QMap<QString, QByteArray> mAudioByteArrays;
+
+	QString mAudioTopic;
 	QBuffer mAudioBuffer;
 	QMediaPlayer mMediaPlayer;
 };
