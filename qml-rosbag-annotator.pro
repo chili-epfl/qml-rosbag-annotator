@@ -1,6 +1,6 @@
 TEMPLATE = lib
 TARGET = qml-rosbag-annotator
-QT += qml quick
+QT += qml quick multimedia
 CONFIG += plugin c++11
 
 TARGET = $$qtLibraryTarget($$TARGET)

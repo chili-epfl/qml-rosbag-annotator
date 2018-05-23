@@ -57,9 +57,8 @@ ScrollView {
 
 	        MouseArea {
 	            anchors.fill: parent
-
 	            onClicked: {
-	            	bagAnnotator.setCurrentTime(bagAnnotator.length * mouse.x / width);
+	            	seek(bagAnnotator.length * mouse.x / width);
 	            }
 	        }
 	    }
@@ -72,20 +71,17 @@ ScrollView {
 
 		    Button {
 		    	text: "Reset"
-
-		    	onClicked: reset()
+		    	onClicked: seek(0)
 		    }
 
 		    Button {
+		    	id: playPauseButton
 		    	text: "Play"
-
 		    	onClicked: {
 		    		if (text === "Play") {
-		    			text = "Pause"
 		    			play()
 		    		}
 		    		else {
-		    			text = "Play"
 		    			pause()
 		    		}
 		    	}
@@ -138,7 +134,7 @@ ScrollView {
 						onClicked: {
 							var prevTime = bagAnnotator.findPreviousTime(Object.keys(otherTopics)[index]);
 							console.log("time: " + bagAnnotator.currentTime + ", prev: " + prevTime)
-							bagAnnotator.setCurrentTime(prevTime)
+							seek(prevTime)
 						}
 					}
 
@@ -150,7 +146,7 @@ ScrollView {
 						onClicked: {
 							var nextTime = bagAnnotator.findNextTime(Object.keys(otherTopics)[index]);
 							console.log("time: " + bagAnnotator.currentTime + ", next: " + nextTime)
-							bagAnnotator.setCurrentTime(nextTime)
+							seek(nextTime)
 						}
 					}
 				}
@@ -165,6 +161,10 @@ ScrollView {
         repeat: true
         onTriggered: {
         	advance(interval * 1e-3)
+
+        	if (!bagAnnotator.audioPlaying) {
+        		bagAnnotator.playAudio(audioTopic)
+        	}
         }
     }
 
@@ -181,19 +181,33 @@ ScrollView {
     }
 
 	function reset() {
-		playTimer.stop()
+		pause()
 	    bagAnnotator.setCurrentTime(0)
 	}
 
 	function play() {
+		if (playPauseButton.text === "Play") {
+			playPauseButton.text = "Pause"
+		}
+
 	    playTimer.start()
 	}
 
 	function pause() {
+		if (playPauseButton.text === "Pause") {
+			playPauseButton.text = "Play"
+		}
+
 	    playTimer.stop()
+		bagAnnotator.stopAudio()
 	}
 
     function advance(time) {
     	bagAnnotator.advance(time)
+    }
+
+    function seek(position) {
+		bagAnnotator.setCurrentTime(position)
+		bagAnnotator.stopAudio()
     }
 }

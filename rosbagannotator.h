@@ -2,7 +2,9 @@
 #define ROSBAGANNOTATOR_H
 
 #include <QQuickItem>
+#include <QBuffer>
 #include <QImage>
+#include <QMediaPlayer>
 #include <QVector2D>
 #include <QVector3D>
 
@@ -26,6 +28,7 @@ class RosBagAnnotator : public QQuickItem
     Q_PROPERTY(double currentTime READ currentTime WRITE setCurrentTime NOTIFY currentTimeChanged)
     Q_PROPERTY(QVariantMap topics READ topics NOTIFY topicsChanged)
     Q_PROPERTY(QVariantMap topicsByType READ topicsByType NOTIFY topicsByTypeChanged)
+    Q_PROPERTY(bool audioPlaying READ audioPlaying NOTIFY audioPlayingChanged)
 
 public:
     enum Status {
@@ -45,10 +48,10 @@ public:
     double currentTime() const { return 1e-9 * (mCurrentTime - mStartTime); }
     const QVariantMap &topics() const { return mTopics; }
     const QVariantMap &topicsByType() const { return mTopicsByType; }
+    bool audioPlaying() const { return mMediaPlayer.state() == QMediaPlayer::PlayingState; }
 
 public slots:
     void setBagPath(QString path);
-
     void setUseRosTime(bool use) {
         mUseRosTime = use;
         emit useRosTimeChanged(use);
@@ -63,6 +66,9 @@ public slots:
 
     QVariant getCurrentValue(const QString &topic);
 
+    void playAudio(const QString &topic);
+    void stopAudio();
+
 signals:
     void statusChanged(Status status);
     void bagPathChanged(const QString &path);
@@ -71,6 +77,10 @@ signals:
     void currentTimeChanged(double time);
     void topicsChanged(const QVariantMap &topics);
     void topicsByTypeChanged(const QVariantMap &topicsByType);
+    void audioPlayingChanged(bool playing);
+
+private slots:
+    void playerStateChanged(QMediaPlayer::State state);
 
 private:
     void reset();
@@ -160,7 +170,7 @@ private:
     QMap<QString, QList<QPair<uint64_t, QString>>::const_iterator> mCurrentString;
     QMap<QString, QList<QPair<uint64_t, QVector2D>>::const_iterator> mCurrentVector2;
     QMap<QString, QList<QPair<uint64_t, QVector3D>>::const_iterator> mCurrentVector3;
-    QMap<QString, QList<QPair<uint64_t, QPair<int, int>>>::const_iterator> mCurrentAudio;
+    QMap<QString, QList<QPair<uint64_t, int>>::const_iterator> mCurrentAudio;
     QMap<QString, QList<QPair<uint64_t, QImage>>::const_iterator> mCurrentImage;
 
     QMap<QString, QList<QPair<uint64_t, bool>>> mBoolMsgs;
@@ -169,10 +179,12 @@ private:
     QMap<QString, QList<QPair<uint64_t, QString>>> mStringMsgs;
     QMap<QString, QList<QPair<uint64_t, QVector2D>>> mVector2Msgs;
     QMap<QString, QList<QPair<uint64_t, QVector3D>>> mVector3Msgs;
-    QMap<QString, QList<QPair<uint64_t, QPair<int, int>>>> mAudioMsgs;
+    QMap<QString, QList<QPair<uint64_t, int>>> mAudioMsgs;
     QMap<QString, QList<QPair<uint64_t, QImage>>> mImageMsgs;
 
     QMap<QString, QByteArray> mAudioByteArrays;
+    QBuffer mAudioBuffer;
+    QMediaPlayer mMediaPlayer;
 };
 
 #endif // ROSBAGANNOTATOR_H

@@ -30,6 +30,8 @@ RosBagAnnotator::RosBagAnnotator(QQuickItem *parent):
     // following line and re-implement updatePaintNode()
 
     // setFlag(ItemHasContents, true);
+
+    connect(&mMediaPlayer, &QMediaPlayer::stateChanged, this, &RosBagAnnotator::playerStateChanged);
 }
 
 RosBagAnnotator::~RosBagAnnotator()
@@ -93,35 +95,27 @@ double RosBagAnnotator::findPreviousTime(const QString &topic) {
 	const QString &type = mTopics[topic].toString();
 
 	if (type == "Bool") {
-		assert(mBoolMsgs.find(topic) != mBoolMsgs.end());
 		prevTime = previousMessageTime(mBoolMsgs[topic], mCurrentBool[topic]);
 	}
 	else if (type == "Float") {
-		assert(mFloatMsgs.find(topic) != mFloatMsgs.end());
 		prevTime = previousMessageTime(mFloatMsgs[topic], mCurrentFloat[topic]);
 	}
 	else if (type == "Int") {
-		assert(mIntMsgs.find(topic) != mIntMsgs.end());
 		prevTime = previousMessageTime(mIntMsgs[topic], mCurrentInt[topic]);
 	}
 	else if (type == "String") {
-		assert(mStringMsgs.find(topic) != mStringMsgs.end());
 		prevTime = previousMessageTime(mStringMsgs[topic], mCurrentString[topic]);
 	}
 	else if (type == "Vector2") {
-		assert(mVector2Msgs.find(topic) != mVector2Msgs.end());
 		prevTime = previousMessageTime(mVector2Msgs[topic], mCurrentVector2[topic]);
 	}
 	else if (type == "Vector3") {
-		assert(mVector3Msgs.find(topic) != mVector3Msgs.end());
 		prevTime = previousMessageTime(mVector3Msgs[topic], mCurrentVector3[topic]);
 	}
 	else if (type == "Audio") {
-		assert(mAudioMsgs.find(topic) != mAudioMsgs.end());
 		prevTime = previousMessageTime(mAudioMsgs[topic], mCurrentAudio[topic]);
 	}
 	else if (type == "Image") {
-		assert(mImageMsgs.find(topic) != mImageMsgs.end());
 		prevTime = previousMessageTime(mImageMsgs[topic], mCurrentImage[topic]);
 	}
 
@@ -135,35 +129,27 @@ double RosBagAnnotator::findNextTime(const QString &topic) {
 	const QString &type = mTopics[topic].toString();
 
 	if (type == "Bool") {
-		assert(mBoolMsgs.find(topic) != mBoolMsgs.end());
 		nextTime = nextMessageTime(mBoolMsgs[topic], mCurrentBool[topic]);
 	}
 	else if (type == "Float") {
-		assert(mFloatMsgs.find(topic) != mFloatMsgs.end());
 		nextTime = nextMessageTime(mFloatMsgs[topic], mCurrentFloat[topic]);
 	}
 	else if (type == "Int") {
-		assert(mIntMsgs.find(topic) != mIntMsgs.end());
 		nextTime = nextMessageTime(mIntMsgs[topic], mCurrentInt[topic]);
 	}
 	else if (type == "String") {
-		assert(mStringMsgs.find(topic) != mStringMsgs.end());
 		nextTime = nextMessageTime(mStringMsgs[topic], mCurrentString[topic]);
 	}
 	else if (type == "Vector2") {
-		assert(mVector2Msgs.find(topic) != mVector2Msgs.end());
 		nextTime = nextMessageTime(mVector2Msgs[topic], mCurrentVector2[topic]);
 	}
 	else if (type == "Vector3") {
-		assert(mVector3Msgs.find(topic) != mVector3Msgs.end());
 		nextTime = nextMessageTime(mVector3Msgs[topic], mCurrentVector3[topic]);
 	}
 	else if (type == "Audio") {
-		assert(mAudioMsgs.find(topic) != mAudioMsgs.end());
 		nextTime = nextMessageTime(mAudioMsgs[topic], mCurrentAudio[topic]);
 	}
 	else if (type == "Image") {
-		assert(mImageMsgs.find(topic) != mImageMsgs.end());
 		nextTime = nextMessageTime(mImageMsgs[topic], mCurrentImage[topic]);
 	}
 
@@ -215,7 +201,7 @@ QVariant RosBagAnnotator::getCurrentValue(const QString &topic) {
 	else if (type == "Audio") {
 		auto it = mCurrentAudio[topic];
 		if (it >= mAudioMsgs[topic].begin()) {
-			value = it->second.first;
+			value = it->second;
 		}
 	}
 	else if (type == "Image") {
@@ -226,6 +212,56 @@ QVariant RosBagAnnotator::getCurrentValue(const QString &topic) {
 	}
 
 	return value;
+}
+
+void RosBagAnnotator::playAudio(const QString &topic) {
+	stopAudio();
+
+	// check for existence of topic
+	auto it = mAudioMsgs.find(topic);
+	if (it == mAudioMsgs.end()) {
+		return;
+	}
+
+	// check if audio has ended
+	if (it->rbegin()->first < mCurrentTime) {
+		return;
+	}
+
+	// check if audio has started
+	auto currentIt = mCurrentAudio[topic];
+	if (currentIt < it->begin()) {
+		return;
+	}
+
+	// seek to correct position when setting up the buffer
+	// (QMediaPlayer can only seek asynchronously)
+    mAudioBuffer.setData(
+    	mAudioByteArrays[topic].constData() + currentIt->second, 
+    	mAudioByteArrays[topic].size() - currentIt->second
+    );
+
+    mAudioBuffer.open(QIODevice::ReadOnly);
+    mMediaPlayer.setMedia(QMediaContent(), &mAudioBuffer);
+    mMediaPlayer.play();
+}
+
+void RosBagAnnotator::stopAudio() {
+	if (audioPlaying()) {
+		mMediaPlayer.stop();
+	}
+}
+
+void RosBagAnnotator::playerStateChanged(QMediaPlayer::State state) {
+	if (state == QMediaPlayer::PlayingState) {
+		emit audioPlayingChanged(true);
+	}
+	else {
+		mMediaPlayer.setMedia(QMediaContent());
+		mAudioBuffer.close();
+
+		emit audioPlayingChanged(false);
+	}
 }
 
 void RosBagAnnotator::reset() {
@@ -252,10 +288,12 @@ void RosBagAnnotator::reset() {
 	mAudioMsgs.clear();
 	mImageMsgs.clear();
 
+	mAudioByteArrays.clear();
+
     emit lengthChanged(length());
     emit topicsChanged(mTopics);
     emit topicsByTypeChanged(mTopicsByType);
-    emit currentTimeChanged(0.0f);
+    emit currentTimeChanged(0.0);
 
 	mStatus = EMPTY;
 	emit statusChanged(mStatus);
@@ -288,7 +326,7 @@ void RosBagAnnotator::parseBag(std::unique_ptr<rosbag::Bag> &&bag) {
     emit topicsChanged(mTopics);
     emit topicsByTypeChanged(mTopicsByType);
 
-    setCurrentTime(0.0f);
+    setCurrentTime(0.0);
 
 	mStatus = READY;
 	emit statusChanged(mStatus);
@@ -368,15 +406,18 @@ void RosBagAnnotator::extractMessage(const rosbag::MessageInstance &msg) {
 		if (type == "audio_common_msgs/AudioData") {
 			type = "Audio";
 			audio_common_msgs::AudioData::ConstPtr m = msg.instantiate<audio_common_msgs::AudioData>();
+
+			if (mAudioByteArrays.find(topic) == mAudioByteArrays.end()) {
+				mAudioByteArrays.insert(topic, QByteArray());
+			}
+
+			mAudioMsgs[topic].append(QPair<uint64_t, int>(time, mAudioByteArrays[topic].size()));
 			mAudioByteArrays[topic].append(QByteArray(reinterpret_cast<const char *>(m->data.data()), m->data.size()));
-			mAudioMsgs[topic].append(QPair<uint64_t, QPair<int, int>>(time, QPair<int, int>(mAudioByteArrays[topic].size(), m->data.size())));
 		}
 		else if (type == "sensor_msgs/CompressedImage") {
 			type = "Image";
 			sensor_msgs::CompressedImage::ConstPtr m = msg.instantiate<sensor_msgs::CompressedImage>();
-			QImage img;
-			img.loadFromData(m->data.data(), m->data.size(), m->format.c_str());
-			mImageMsgs[topic].append(QPair<uint64_t, QImage>(time, img));
+			mImageMsgs[topic].append(QPair<uint64_t, QImage>(time, QImage::fromData(m->data.data(), m->data.size(), m->format.c_str())));
 		}
 	}
 
