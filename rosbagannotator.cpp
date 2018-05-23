@@ -3,6 +3,17 @@
 #include <rosbag/bag.h>
 #include <rosbag/view.h>
 
+#include <audio_common_msgs/AudioData.h>
+#include <sensor_msgs/CompressedImage.h>
+
+#include <chili_msgs/Bool.h>
+#include <chili_msgs/Float32.h>
+#include <chili_msgs/Int32.h>
+#include <chili_msgs/String.h>
+#include <chili_msgs/Vector2Float32.h>
+#include <chili_msgs/Vector3Float32.h>
+#include <chili_msgs/Vector2Int32.h>
+
 #include <algorithm>
 #include <limits>
 
@@ -55,23 +66,14 @@ void RosBagAnnotator::setCurrentTime(double time) {
     	mCurrentTime = mEndTime;
     }
 
-    seekCurrentMessageIndices(mBoolMsgs);
-    seekCurrentMessageIndices(mFloatMsgs);
-    seekCurrentMessageIndices(mIntMsgs);
-    seekCurrentMessageIndices(mStringMsgs);
-    seekCurrentMessageIndices(mVector2Msgs);
-    seekCurrentMessageIndices(mVector3Msgs);
-    seekCurrentMessageIndices(mAudioMsgs);
-    seekCurrentMessageIndices(mImageMsgs);
-
-    updateCurrentItems("Bool", mCurrentBool, mBoolMsgs);
-    updateCurrentItems("Float", mCurrentFloat, mFloatMsgs);
-    updateCurrentItems("Int", mCurrentInt, mIntMsgs);
-    updateCurrentItems("String", mCurrentString, mStringMsgs);
-    updateCurrentItems("Vector2", mCurrentVector2, mVector2Msgs);
-    updateCurrentItems("Vector3", mCurrentVector3, mVector3Msgs);
-    updateCurrentItems("Audio", mCurrentAudio, mAudioMsgs);
-    updateCurrentItems("Image", mCurrentImage, mImageMsgs);
+    seekCurrentMessageIndices(mBoolMsgs, mCurrentBool);
+    seekCurrentMessageIndices(mFloatMsgs, mCurrentFloat);
+    seekCurrentMessageIndices(mIntMsgs, mCurrentInt);
+    seekCurrentMessageIndices(mStringMsgs, mCurrentString);
+    seekCurrentMessageIndices(mVector2Msgs, mCurrentVector2);
+    seekCurrentMessageIndices(mVector3Msgs, mCurrentVector3);
+    seekCurrentMessageIndices(mAudioMsgs, mCurrentAudio);
+    seekCurrentMessageIndices(mImageMsgs, mCurrentImage);
 
     emit currentTimeChanged(time);
 }
@@ -92,35 +94,35 @@ double RosBagAnnotator::findPreviousTime(const QString &topic) {
 
 	if (type == "Bool") {
 		assert(mBoolMsgs.find(topic) != mBoolMsgs.end());
-		prevTime = previous(mBoolMsgs[topic]);
+		prevTime = previousMessageTime(mBoolMsgs[topic], mCurrentBool[topic]);
 	}
 	else if (type == "Float") {
 		assert(mFloatMsgs.find(topic) != mFloatMsgs.end());
-		prevTime = previous(mFloatMsgs[topic]);
+		prevTime = previousMessageTime(mFloatMsgs[topic], mCurrentFloat[topic]);
 	}
 	else if (type == "Int") {
 		assert(mIntMsgs.find(topic) != mIntMsgs.end());
-		prevTime = previous(mIntMsgs[topic]);
+		prevTime = previousMessageTime(mIntMsgs[topic], mCurrentInt[topic]);
 	}
 	else if (type == "String") {
 		assert(mStringMsgs.find(topic) != mStringMsgs.end());
-		prevTime = previous(mStringMsgs[topic]);
+		prevTime = previousMessageTime(mStringMsgs[topic], mCurrentString[topic]);
 	}
 	else if (type == "Vector2") {
 		assert(mVector2Msgs.find(topic) != mVector2Msgs.end());
-		prevTime = previous(mVector2Msgs[topic]);
+		prevTime = previousMessageTime(mVector2Msgs[topic], mCurrentVector2[topic]);
 	}
 	else if (type == "Vector3") {
 		assert(mVector3Msgs.find(topic) != mVector3Msgs.end());
-		prevTime = previous(mVector3Msgs[topic]);
+		prevTime = previousMessageTime(mVector3Msgs[topic], mCurrentVector3[topic]);
 	}
 	else if (type == "Audio") {
 		assert(mAudioMsgs.find(topic) != mAudioMsgs.end());
-		prevTime = previous(mAudioMsgs[topic]);
+		prevTime = previousMessageTime(mAudioMsgs[topic], mCurrentAudio[topic]);
 	}
 	else if (type == "Image") {
 		assert(mImageMsgs.find(topic) != mImageMsgs.end());
-		prevTime = previous(mImageMsgs[topic]);
+		prevTime = previousMessageTime(mImageMsgs[topic], mCurrentImage[topic]);
 	}
 
 	return std::max(1e-9 * (prevTime - mStartTime) - 1e-6, 0.0);
@@ -134,35 +136,35 @@ double RosBagAnnotator::findNextTime(const QString &topic) {
 
 	if (type == "Bool") {
 		assert(mBoolMsgs.find(topic) != mBoolMsgs.end());
-		nextTime = next(mBoolMsgs[topic]);
+		nextTime = nextMessageTime(mBoolMsgs[topic], mCurrentBool[topic]);
 	}
 	else if (type == "Float") {
 		assert(mFloatMsgs.find(topic) != mFloatMsgs.end());
-		nextTime = next(mFloatMsgs[topic]);
+		nextTime = nextMessageTime(mFloatMsgs[topic], mCurrentFloat[topic]);
 	}
 	else if (type == "Int") {
 		assert(mIntMsgs.find(topic) != mIntMsgs.end());
-		nextTime = next(mIntMsgs[topic]);
+		nextTime = nextMessageTime(mIntMsgs[topic], mCurrentInt[topic]);
 	}
 	else if (type == "String") {
 		assert(mStringMsgs.find(topic) != mStringMsgs.end());
-		nextTime = next(mStringMsgs[topic]);
+		nextTime = nextMessageTime(mStringMsgs[topic], mCurrentString[topic]);
 	}
 	else if (type == "Vector2") {
 		assert(mVector2Msgs.find(topic) != mVector2Msgs.end());
-		nextTime = next(mVector2Msgs[topic]);
+		nextTime = nextMessageTime(mVector2Msgs[topic], mCurrentVector2[topic]);
 	}
 	else if (type == "Vector3") {
 		assert(mVector3Msgs.find(topic) != mVector3Msgs.end());
-		nextTime = next(mVector3Msgs[topic]);
+		nextTime = nextMessageTime(mVector3Msgs[topic], mCurrentVector3[topic]);
 	}
 	else if (type == "Audio") {
 		assert(mAudioMsgs.find(topic) != mAudioMsgs.end());
-		nextTime = next(mAudioMsgs[topic]);
+		nextTime = nextMessageTime(mAudioMsgs[topic], mCurrentAudio[topic]);
 	}
 	else if (type == "Image") {
 		assert(mImageMsgs.find(topic) != mImageMsgs.end());
-		nextTime = next(mImageMsgs[topic]);
+		nextTime = nextMessageTime(mImageMsgs[topic], mCurrentImage[topic]);
 	}
 
 	return std::min(1e-9 * (nextTime - mStartTime) + 1e-6, 1e-9 * (mEndTime - mStartTime));
@@ -175,51 +177,51 @@ QVariant RosBagAnnotator::getCurrentValue(const QString &topic) {
 	QVariant value;
 
 	if (type == "Bool") {
-		auto it = mCurrentBool.find(topic);
-		if (it != mCurrentBool.end()) {
-			value = *it;
+		auto it = mCurrentBool[topic];
+		if (it >= mBoolMsgs[topic].begin()) {
+			value = it->second;
 		}
 	}
 	else if (type == "Float") {
-		auto it = mCurrentFloat.find(topic);
-		if (it != mCurrentFloat.end()) {
-			value = *it;
+		auto it = mCurrentFloat[topic];
+		if (it >= mFloatMsgs[topic].begin()) {
+			value = it->second;
 		}
 	}
 	else if (type == "Int") {
-		auto it = mCurrentInt.find(topic);
-		if (it != mCurrentInt.end()) {
-			value = *it;
+		auto it = mCurrentInt[topic];
+		if (it >= mIntMsgs[topic].begin()) {
+			value = it->second;
 		}
 	}
 	else if (type == "String") {
-		auto it = mCurrentString.find(topic);
-		if (it != mCurrentString.end()) {
-			value = *it;
+		auto it = mCurrentString[topic];
+		if (it >= mStringMsgs[topic].begin()) {
+			value = it->second;
 		}
 	}
 	else if (type == "Vector2") {
-		auto it = mCurrentVector2.find(topic);
-		if (it != mCurrentVector2.end()) {
-			value = *it;
+		auto it = mCurrentVector2[topic];
+		if (it >= mVector2Msgs[topic].begin()) {
+			value = it->second;
 		}
 	}
 	else if (type == "Vector3") {
-		auto it = mCurrentVector3.find(topic);
-		if (it != mCurrentVector3.end()) {
-			value = *it;
+		auto it = mCurrentVector3[topic];
+		if (it >= mVector3Msgs[topic].begin()) {
+			value = it->second;
 		}
 	}
 	else if (type == "Audio") {
-		auto it = mCurrentAudio.find(topic);
-		if (it != mCurrentAudio.end()) {
-			value = it->first;
+		auto it = mCurrentAudio[topic];
+		if (it >= mAudioMsgs[topic].begin()) {
+			value = it->second.first;
 		}
 	}
 	else if (type == "Image") {
-		auto it = mCurrentImage.find(topic);
-		if (it != mCurrentImage.end()) {
-			value = *it;
+		auto it = mCurrentImage[topic];
+		if (it >= mImageMsgs[topic].begin()) {
+			value = it->second;
 		}
 	}
 
@@ -231,7 +233,6 @@ void RosBagAnnotator::reset() {
 
 	mTopics.clear();
 	mTopicsByType.clear();
-	mCurrentMessageIndices.clear();
 
 	mCurrentBool.clear();
 	mCurrentFloat.clear();
@@ -251,13 +252,13 @@ void RosBagAnnotator::reset() {
 	mAudioMsgs.clear();
 	mImageMsgs.clear();
 
-	mStatus = EMPTY;
-	emit statusChanged(mStatus);
-
-    emit currentTimeChanged(0.0f);
     emit lengthChanged(length());
     emit topicsChanged(mTopics);
     emit topicsByTypeChanged(mTopicsByType);
+    emit currentTimeChanged(0.0f);
+
+	mStatus = EMPTY;
+	emit statusChanged(mStatus);
 }
 
 void RosBagAnnotator::parseBag(std::unique_ptr<rosbag::Bag> &&bag) {
@@ -283,13 +284,14 @@ void RosBagAnnotator::parseBag(std::unique_ptr<rosbag::Bag> &&bag) {
     sortMessages(mVector2Msgs);
     sortMessages(mVector3Msgs);
 
-	mStatus = READY;
-
-	emit statusChanged(mStatus);
-    emit currentTimeChanged(0.0f);
     emit lengthChanged(length());
     emit topicsChanged(mTopics);
     emit topicsByTypeChanged(mTopicsByType);
+
+    setCurrentTime(0.0f);
+
+	mStatus = READY;
+	emit statusChanged(mStatus);
 }
 
 void RosBagAnnotator::extractMessage(const rosbag::MessageInstance &msg) {
@@ -389,8 +391,6 @@ void RosBagAnnotator::extractMessage(const rosbag::MessageInstance &msg) {
 			tmp.append(topic);
 			mTopicsByType.insert(type, tmp);
 		}
-
-		mCurrentMessageIndices[topic] = 0;
 	}
 
 	if (time < mStartTime) {

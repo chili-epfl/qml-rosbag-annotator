@@ -12,17 +12,6 @@ namespace rosbag {
 
 #include <rosbag/message_instance.h>
 
-#include <audio_common_msgs/AudioData.h>
-#include <sensor_msgs/CompressedImage.h>
-
-#include <chili_msgs/Bool.h>
-#include <chili_msgs/Float32.h>
-#include <chili_msgs/Int32.h>
-#include <chili_msgs/String.h>
-#include <chili_msgs/Vector2Float32.h>
-#include <chili_msgs/Vector3Float32.h>
-#include <chili_msgs/Vector2Int32.h>
-
 #include <memory>
 
 class RosBagAnnotator : public QQuickItem
@@ -95,8 +84,8 @@ private:
     }
 
     template<class T>
-    void sortMessages(QMap<QString, QList<QPair<uint64_t, T>>> &topicMessagesMap) {
-        for (auto it = topicMessagesMap.begin(); it != topicMessagesMap.end(); ++it) {
+    void sortMessages(QMap<QString, QList<QPair<uint64_t, T>>> &typedMessages) {
+        for (auto it = typedMessages.begin(); it != typedMessages.end(); ++it) {
             std::sort(it->begin(), it->end(), 
                 [&](const QPair<uint64_t, T> &a, const QPair<uint64_t, T> &b) {
                     return a.first < b.first;
@@ -106,64 +95,52 @@ private:
     }
 
     template<class T>
-    void seekCurrentMessageIndices(QMap<QString, QList<QPair<uint64_t, T>>> &topicMessagesMap) {
-        for (auto topicIt = topicMessagesMap.begin(); topicIt != topicMessagesMap.end(); ++topicIt) {
-            assert(topicIt.value().size());
-
-            int index = -1;
-            for (auto msgIt = topicIt->begin(); msgIt != topicIt->end() && msgIt->first <= mCurrentTime; ++msgIt) {
-                index = msgIt - topicIt->begin();
+    void seekCurrentMessageIndices(const QMap<QString, QList<QPair<uint64_t, T>>> &typedMessages,
+                                   QMap<QString, typename QList<QPair<uint64_t, T>>::const_iterator> &currentMessages) {
+        for (auto topicIt = typedMessages.begin(); topicIt != typedMessages.end(); ++topicIt) {
+            const QString &topic = topicIt.key();
+            const auto &messages = topicIt.value();
+            
+            auto currentIt = messages.begin() - 1;
+            if (currentMessages.find(topicIt.key()) != currentMessages.end()) {
+                currentIt = currentMessages[topic];
             }
 
-            mCurrentMessageIndices[topicIt.key()] = index;
-        }
-    }
-
-    template<class T, class U>
-    void updateCurrentItems(const QString &type, T &current, const U &messages) {
-        const auto &topics = mTopicsByType[type].toList();
-        for (auto it = topics.begin(); it != topics.end(); ++it) {
-            const QString &topic = it->toString();
-
-            assert(mCurrentMessageIndices.find(topic) != mCurrentMessageIndices.end());
-            int index = mCurrentMessageIndices[topic];
-
-            if (index < 0) {
-                current.remove(topic);
+            uint64_t prevTime = mStartTime;
+            if (currentIt >= messages.begin()) {
+                prevTime = currentIt->first;
             }
-            else {
-                assert(messages.find(topic) != messages.end());
-                const auto &list = messages[topic];
 
-                current[topic] = list.at(index).second;
+            if (prevTime < mCurrentTime) {
+                for (auto peekIt = currentIt + 1; peekIt != messages.end() && peekIt->first <= mCurrentTime; ++currentIt, ++peekIt);
             }
+            else if (prevTime > mCurrentTime) {
+                for (; currentIt >= messages.begin() && currentIt->first > mCurrentTime; --currentIt);
+            }
+
+            currentMessages[topic] = currentIt;
         }
     }
 
     template<class T>
-    uint64_t next(const QList<QPair<uint64_t, T>>& messages) {
-        for (auto it = messages.begin(); it != messages.end(); ++it) {
-            if (it->first <= mCurrentTime) {
-                continue;
-            }
-
-            return it->first;
+    uint64_t previousMessageTime(const QList<QPair<uint64_t, T>>& messages, typename QList<QPair<uint64_t, T>>::const_iterator current) {
+        if (current <= messages.begin()) {
+            return mCurrentTime;
         }
 
-        return mCurrentTime;
+        auto previous = current - 1;
+        return previous->first;
     }
 
     template<class T>
-    uint64_t previous(const QList<QPair<uint64_t, T>>& messages) {
-        for (auto it = messages.rend(); it != messages.rbegin(); --it) {
-            if (it->first >= mCurrentTime) {
-                continue;
-            }
-
-            return it->first;
+    uint64_t nextMessageTime(const QList<QPair<uint64_t, T>>& messages, typename QList<QPair<uint64_t, T>>::const_iterator current) {
+        auto next = current + 1;
+        if (next == messages.end()) {
+            return mCurrentTime;
         }
-
-        return mCurrentTime;
+        else {
+            return next->first;
+        }
     }
 
     Status mStatus;
@@ -177,16 +154,14 @@ private:
 	QVariantMap mTopics;
 	QVariantMap mTopicsByType;
 
-    QMap<QString, bool> mCurrentBool;
-    QMap<QString, float> mCurrentFloat;
-    QMap<QString, int> mCurrentInt;
-    QMap<QString, QString> mCurrentString;
-    QMap<QString, QVector2D> mCurrentVector2;
-    QMap<QString, QVector3D> mCurrentVector3;
-    QMap<QString, QPair<int,int>> mCurrentAudio;
-    QMap<QString, QImage> mCurrentImage;
-
-    QMap<QString, int> mCurrentMessageIndices; // index of most recent message for each topic
+    QMap<QString, QList<QPair<uint64_t, bool>>::const_iterator> mCurrentBool;
+    QMap<QString, QList<QPair<uint64_t, float>>::const_iterator> mCurrentFloat;
+    QMap<QString, QList<QPair<uint64_t, int>>::const_iterator> mCurrentInt;
+    QMap<QString, QList<QPair<uint64_t, QString>>::const_iterator> mCurrentString;
+    QMap<QString, QList<QPair<uint64_t, QVector2D>>::const_iterator> mCurrentVector2;
+    QMap<QString, QList<QPair<uint64_t, QVector3D>>::const_iterator> mCurrentVector3;
+    QMap<QString, QList<QPair<uint64_t, QPair<int, int>>>::const_iterator> mCurrentAudio;
+    QMap<QString, QList<QPair<uint64_t, QImage>>::const_iterator> mCurrentImage;
 
     QMap<QString, QList<QPair<uint64_t, bool>>> mBoolMsgs;
     QMap<QString, QList<QPair<uint64_t, float>>> mFloatMsgs;
