@@ -15,8 +15,8 @@ ApplicationWindow {
     visible: true
 
     property bool mobile: Qt.platform.os === "android"
-    width: mobile ? Screen.width : 1280
-    height: mobile ? Screen.height : 720
+    width: mobile ? Screen.width : 960
+    height: mobile ? Screen.height : 960
 
     Config {
         id: config
@@ -35,7 +35,6 @@ ApplicationWindow {
             text: "\u2630"
             font.pixelSize: Qt.application.font.pixelSize * 1.6
             onClicked: {
-                stackView.pop()
                 drawer.open()
             }
         }
@@ -49,13 +48,19 @@ ApplicationWindow {
 
     Popup {
         id: popup
+        x: 0.5 * (root.width - (popupText.implicitWidth + 64))
+        width: popupText.implicitWidth + 64
+        height: popupText.implicitHeight + 64
         modal: true
         focus: true
 
         ColumnLayout {
+            id: popupLayout
             anchors.fill: parent
+
             Text {
                 id: popupText
+                Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
                 font.bold: true
             }
         }
@@ -76,8 +81,15 @@ ApplicationWindow {
                 text: qsTr("Configure")
                 width: parent.width
                 onClicked: {
+                    if (config.visible) {
+                        drawer.close()
+                        return;
+                    }
+
                     annotate.visible = false
                     config.visible = true
+
+                    stackView.pop()
                     stackView.push(config)
                     drawer.close()
                 }
@@ -87,6 +99,13 @@ ApplicationWindow {
                 text: qsTr("Annotate")
                 width: parent.width
                 onClicked: {
+                    if (annotate.visible) {
+                        drawer.close()
+                        return;
+                    }
+
+                    config.save()
+
                     if (config.bagAnnotator.status != RosBagAnnotator.READY) {
                         popupText.text = "Please configure before annotating!"
                         popup.open()
@@ -94,21 +113,18 @@ ApplicationWindow {
                     }
 
                     if (String(config.imageTopic) === "") {
-                        popupText.text = "Please choose an image topic to use for annotating!"
+                        popupText.text = "Please choose an image topic to use during annotation!"
                         popup.open()
                         return
                     }
 
-                    config.save()
-                    config.visible = false
+                    annotate.load(config)
                     
+                    config.visible = false
                     annotate.visible = true
-                    annotate.bagAnnotator = config.bagAnnotator
-                    annotate.imageTopic = config.imageTopic
-                    annotate.audioTopic = config.audioTopic
-                    annotate.otherTopics = config.otherTopics
-                    annotate.load()
 
+                    
+                    stackView.pop()
                     stackView.push(annotate)
                     drawer.close()
                 }

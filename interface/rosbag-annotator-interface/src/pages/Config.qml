@@ -10,28 +10,32 @@ import ch.epfl.chili 1.0
 ScrollView {
 	id: root
 	anchors.fill: parent
-	property var title: qsTr("Configure your annotation session")
 
-	property var bagAnnotator: null
-	property var imageTopic: null
-	property var audioTopic: null
-	property var otherTopics: {}
+	property var title: qsTr("Configure your annotation session")
+	property var bagAnnotator
+	property var imageTopic
+	property var audioTopic
+	property var otherTopics: new Object({})
+	property var selectableTopics: new Object({})
 
 	ColumnLayout {
-		anchors.fill: parent
+		anchors.horizontalCenter: parent.horizontalCenter
+		anchors.top: parent.top
+		anchors.topMargin: 8
+		width: 0.9 * parent.width
 		spacing: 4
 
 		RosBagAnnotator {
 			id: annotator
-
+			visible: false
 			Component.onCompleted: bagAnnotator = annotator
 		}
 
 		RowLayout {
-			spacing: 4
-			Layout.margins: 4
-			Layout.preferredWidth: 1280
 			Layout.fillWidth: true
+			Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+
+			spacing: 8
 
 			FileDialog {
 				id: bagFileDialog
@@ -47,173 +51,229 @@ ScrollView {
 					path = path.replace(/^(file:\/{2})/,"");
 					path = decodeURIComponent(path);
 					bagFilePath.text = path;
-					
-					annotator.setUseRosTime(useRosTimeCheckBox.checked)
-					annotator.setBagPath(path);
-
-					imageTopic = imageTopicComboBox.currentText
-					audioTopic = audioTopicComboBox.currentText
+					load()
 				}
-			}
-
-			CheckBox {
-				id: useRosTimeCheckBox
-				Layout.preferredWidth: 220
-
-				text: qsTr("Use ROS master time")
-				checked: false
-			}
-
-			Button {
-				Layout.preferredWidth: 80
-
-				text: "Open..."
-				onClicked: bagFileDialog.open();
 			}
 
 			TextField {
 				id: bagFilePath
-				Layout.preferredWidth: 640
+				Layout.preferredWidth: 0.7 * root.width
 
-				placeholderText: qsTr("Select a *.bag file")
-			}
-		}
+				placeholderText: qsTr("Path to *.bag file")
 
-		RowLayout {
-			Layout.preferredWidth: 1280
-			Layout.fillWidth: true
-
-			Text {
-				id: topicsFoundText
-				Layout.preferredWidth: 400
-				Layout.margins: 4
-				text: "Length of bag in [s]: " + annotator.length + ", found " + Object.keys(annotator.topics).length + " topics in bag."
+				onAccepted: load()
 			}
 
 			Button {
-				Layout.preferredWidth: 160
-				Layout.margins: 4
-				text: "Hide topics"
-				onClicked: {
-					if (text === "Hide topics") {
-						text = "Show topics"
-						topicGrid.visible = false
-					}
-					else {
-						text = "Hide topics"
-						topicGrid.visible = true
-					}
-				}
+				text: "Choose file"
+				onClicked: bagFileDialog.open()
 			}
+
+			Popup {
+		        id: loadingPopup
+				x: 0.5 * (root.width - (popupText.implicitWidth + 64))
+				y: 128
+		        width: popupText.implicitWidth + 64
+		        height: popupText.implicitHeight + 64
+		        modal: true
+		        focus: true
+		        closePolicy: Popup.NoAutoClose
+
+		        RowLayout {
+					anchors.fill: parent
+
+			        Text {
+			        	id: popupText
+						Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+			        	font.bold: true
+			        	text: "Parsing bag contents..."
+			        }
+			    }
+		    }
 		}
 
-		RowLayout {
-			Layout.preferredWidth: 1280
+		GridLayout {
 			Layout.fillWidth: true
+			Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+
+			columns: 2
+			columnSpacing: 8
+			rowSpacing: 4
+
+			Text {
+				Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+				text: "Always use message arrival time to sort topics?"
+			}
+
+			CheckBox {
+				id: useRosTimeCheckBox
+				checked: true
+			}
+
+			Rectangle {
+				Layout.preferredWidth: 0.9 * root.width
+				Layout.preferredHeight: 1
+				Layout.columnSpan: 2
+				Layout.bottomMargin: 8
+				Layout.topMargin: 8
+				color: "#111111"
+			}
+
+			Text {
+				Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+				text: "Length of bag in seconds:"
+			}
+			
+			Text {
+				text: String(annotator.length.toFixed(2))
+				font.bold: true
+			}
+
+			Text {
+				Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+				text: "Number of topics found:"
+			}
+
+			Text {
+				text: String(Object.keys(annotator.topics).length)
+				font.bold: true
+			}
+
+			Rectangle {
+				Layout.preferredWidth: 0.9 * root.width
+				Layout.preferredHeight: 1
+				Layout.columnSpan: 2
+				Layout.bottomMargin: 8
+				Layout.topMargin: 8
+				color: "#111111"
+			}
 
 			Text {
 				id: imageTopicText
-				Layout.preferredWidth: 400
-				Layout.margins: 4
-				text: "Image topic to use for annotation: "
+				Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+				text: "Image topic to use during annotation:"
 			}
 
 			ComboBox {
 				id: imageTopicComboBox
-				Layout.preferredWidth: 400
-				Layout.margins: 4
-				anchors.left: imageTopicText.right
+				Layout.preferredWidth: 0.4 * root.width
 
 				model: annotator.topicsByType["Image"]
 				onActivated: imageTopic = imageTopicComboBox.currentText
 			}
-		}
-
-		RowLayout {
-			Layout.preferredWidth: 1280
-			Layout.fillWidth: true
 
 			Text {
 				id: audioTopicText
-				Layout.preferredWidth: 400
-				Layout.margins: 4
-				text: "Audio topic to use for annotation: "
+				Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+				text: "Audio topic to use during annotation:"
 			}
 
 			ComboBox {
 				id: audioTopicComboBox
-				Layout.preferredWidth: 400
-				Layout.margins: 4
-				anchors.left: audioTopicText.right
+				Layout.preferredWidth: 0.4 * root.width
 
 				model: annotator.topicsByType["Audio"]
 				onActivated: audioTopic = audioTopicComboBox.currentText
 			}
 		}
 
-		GridLayout {
-			id: topicGrid
-			Layout.preferredWidth: 1280
+		RowLayout {
 			Layout.fillWidth: true
+			Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+			Layout.topMargin: 8
+			Layout.bottomMargin: 8
 
-			columns: 3
-			columnSpacing: 4
-			rowSpacing: 4
-
-			Text {
-				Layout.preferredWidth: 48
-				Layout.margins: 4
-				text: "Use"
-				font.bold: true
+			Button {
+				text: topicHeader.visible ? "Hide topic list" : "Show topic list"
+				onClicked: {
+					topicHeader.visible = !topicHeader.visible
+					topicRepeater.visible = !topicRepeater.visible
+				}
 			}
+		}
+
+		RowLayout {
+			id: topicHeader
+			Layout.fillWidth: true
+			Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+			spacing: 4
+
+			visible: annotator.status == RosBagAnnotator.READY
 
 			Text {
-				Layout.preferredWidth: 320
-				Layout.margins: 4
+				id: nameText
+				Layout.preferredWidth: 0.4 * root.width
 				text: "Name"
 				font.bold: true
 			}
+
 			Text {
-				Layout.preferredWidth: 320
-				Layout.margins: 4
+				id: typeText
+				Layout.preferredWidth: 0.3 * root.width
 				text: "Type"
 				font.bold: true
 			}
 
-			Repeater {
-				id: topicRepeater
-				model: Object.keys(annotator.topics).length
+			Text {
+				id: displayText
+				text: "Display?"
+				font.bold: true
+			}
+		}
 
-				RowLayout {
-					Layout.preferredWidth: 1280
-					Layout.fillWidth: true
-					Layout.columnSpan: 3
+		Repeater {
+			id: topicRepeater
+			model: Object.keys(selectableTopics).length
 
-					CheckBox {
-						Layout.preferredWidth: 48
-					}
-					Text {
-						Layout.preferredWidth: 320
-						Layout.margins: 4
-						text: Object.keys(annotator.topics)[index]
-					}
-					Text {
-						Layout.preferredWidth: 320
-						Layout.margins: 4
-						text: annotator.topics[Object.keys(annotator.topics)[index]]
-					}
+			RowLayout {
+				Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+				Layout.fillWidth: true
+				spacing: 4
+
+				Text {
+					Layout.preferredWidth: 0.4 * root.width
+					text: Object.keys(selectableTopics)[index]
+				}
+
+				Text {
+					Layout.preferredWidth: 0.3 * root.width
+					text: selectableTopics[Object.keys(selectableTopics)[index]]
+				}
+
+				CheckBox {
+					Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
 				}
 			}
 		}
 	}
 
+    function load() {
+    	loadingPopup.open()
+
+		annotator.setUseRosTime(useRosTimeCheckBox.checked)
+		annotator.setBagPath(bagFilePath.text)
+
+		var temp = {}
+		for (var i = 0; i < Object.keys(annotator.topics).length; ++i) {
+			if (annotator.topics[Object.keys(annotator.topics)[i]] != "Audio" && 
+				annotator.topics[Object.keys(annotator.topics)[i]] != "Image") {
+				temp[Object.keys(annotator.topics)[i]] = annotator.topics[Object.keys(annotator.topics)[i]]
+			}
+		}
+
+		selectableTopics = new Object(temp)
+
+    	loadingPopup.close()
+    }
+
 	function save() {
+		imageTopic = imageTopicComboBox.currentText
+		audioTopic = audioTopicComboBox.currentText
+
 		otherTopics = {}
 		for (var i = 0; i < topicRepeater.count; ++i) {
-			if (topicRepeater.itemAt(i).children[0].checked &&
-				Object.keys(annotator.topics)[i] != audioTopic &&
-				Object.keys(annotator.topics)[i] != imageTopic) {
-				otherTopics[Object.keys(annotator.topics)[i]] = annotator.topics[Object.keys(annotator.topics)[i]]
+			if (topicRepeater.itemAt(i).children[2].checked) {
+				otherTopics[Object.keys(selectableTopics)[i]] = annotator.topics[Object.keys(selectableTopics)[i]]
 			}
 		}
 	}

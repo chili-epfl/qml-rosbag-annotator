@@ -10,39 +10,41 @@ import ch.epfl.chili 1.0
 ScrollView {
 	id: root
 	anchors.fill: parent
-	property var title: qsTr("Annotate")
 
+	property var title: qsTr("Annotate")
 	property var bagAnnotator
 	property var imageTopic
 	property var audioTopic
-	property var otherTopics
+	property var otherTopics: new Object({})
 	property real playbackFreq: 30.0
 
 	ColumnLayout {
-		anchors.fill: parent
-		spacing: 4
+		id: topLayout
+		anchors.horizontalCenter: parent.horizontalCenter
+		anchors.top: parent.top
+		anchors.topMargin: 8
+		width: 0.9 * parent.width
+		spacing: 16
 
 		ImageItem {
 			id: imageItem
-			Layout.alignment: Qt.AlignCenter
-
-			width: 640
-			height: 480
+			Layout.preferredWidth: imageItem.dims.x ? imageItem.dims.x : 640
+			Layout.preferredHeight: imageItem.dims.y ? imageItem.dims.y : 480
+			Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
 		}
 
 		Text {
-			Layout.alignment: Qt.AlignCenter
+			Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
 			text: bagAnnotator != undefined ? "Current time: " + bagAnnotator.currentTime.toFixed(2) : ""
 		}
 
 		Rectangle {
 			id: progressBar
 
-			anchors.left: parent.left
-			anchors.right: parent.right
-			anchors.margins: 100
+			Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+			Layout.preferredWidth: 0.8 * root.width
+			Layout.preferredHeight: 30
 
-			height: 30
 
 			color: "lightGray"
 
@@ -65,10 +67,9 @@ ScrollView {
 		}
 
 		RowLayout {
-			spacing: 4
-			Layout.margins: 8
-			Layout.preferredWidth: 1280
 			Layout.fillWidth: true
+			Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+			spacing: 32
 
 			Button {
 				text: "Reset"
@@ -89,80 +90,89 @@ ScrollView {
 			}
 
 			Button {
-				text: "Advance 1s"
+				text: "Advance"
 				onClicked: advance(1.0)
 			}
 
 			Button {
 				text: "Add annotation"
+				onClicked: annotationPopup.open()
 			}
 		}
 
-		GridLayout {
-			Layout.preferredWidth: 1280
-			Layout.fillWidth: true
+		Popup {
+	        id: annotationPopup
+	        width: 640
+	        height: 640
+	        modal: true
+	        focus: true
+		    closePolicy: Popup.NoAutoClose
+	    }
 
-			columns: 4
-			columnSpacing: 4
-			rowSpacing: 4
+		Rectangle {
+			Layout.preferredWidth: 0.9 * root.width
+			Layout.preferredHeight: 1
+			Layout.bottomMargin: 16
+			Layout.topMargin: 16
+			color: "#111111"
+		}
 
-			Repeater {
-				id: otherTopicsRepeater
-				model: otherTopics != undefined ? Object.keys(otherTopics).length : 0
+		Repeater {
+			id: otherTopicsRepeater
+			model: Object.keys(otherTopics).length
 
-				RowLayout {
-					Layout.preferredWidth: 1280
-					Layout.fillWidth: true
-					Layout.columnSpan: 4
+			RowLayout {
+				Layout.fillWidth: true
+				Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+				spacing: 8
 
-					Text {
-						Layout.preferredWidth: 300
-						Layout.margins: 4
-						text: Object.keys(otherTopics)[index]
+				Text {
+					Layout.preferredWidth: 0.4 * root.width
+					text: Object.keys(otherTopics)[index]
+				}
+
+				Text {
+					Layout.preferredWidth: 0.2 * root.width
+					text: String(bagAnnotator.getCurrentValue(Object.keys(otherTopics)[index]))
+				}
+
+				Button {
+					text: "Previous"
+					onClicked: {
+						var prevTime = bagAnnotator.findPreviousTime(Object.keys(otherTopics)[index]);
+						seek(prevTime)
 					}
+				}
 
-					Text {
-						Layout.preferredWidth: 300
-						Layout.margins: 4
-						text: String(bagAnnotator.getCurrentValue(Object.keys(otherTopics)[index]))
-					}
-
-					Button {
-						Layout.preferredWidth: 120
-						Layout.margins: 4
-
-						text: "Previous change"
-						onClicked: {
-							var prevTime = bagAnnotator.findPreviousTime(Object.keys(otherTopics)[index]);
-							console.log("time: " + bagAnnotator.currentTime + ", prev: " + prevTime)
-							seek(prevTime)
-						}
-					}
-
-					Button {
-						Layout.preferredWidth: 120
-						Layout.margins: 4
-
-						text: "Next change"
-						onClicked: {
-							var nextTime = bagAnnotator.findNextTime(Object.keys(otherTopics)[index]);
-							console.log("time: " + bagAnnotator.currentTime + ", next: " + nextTime)
-							seek(nextTime)
-						}
+				Button {
+					text: "Next"
+					onClicked: {
+						var nextTime = bagAnnotator.findNextTime(Object.keys(otherTopics)[index]);
+						seek(nextTime)
 					}
 				}
 			}
 		}
 	}
 
-	function load() {
+	function load(config) {
+        bagAnnotator = config.bagAnnotator
+        imageTopic = config.imageTopic
+        audioTopic = config.audioTopic
+        otherTopics = config.otherTopics
+
 		updateValues()
+
 		bagAnnotator.onCurrentTimeChanged.connect(updateValues)
 		bagAnnotator.onPlayingChanged.connect(updatePlayPauseButtonState)
+
+		console.log("root width: " + root.width)
+		console.log("topLayout width: " + topLayout.width)
 	}
 
 	function updateValues(time){
 		imageItem.setImage(bagAnnotator.getCurrentValue(imageTopic))
+
 		for (var i = 0; i < otherTopicsRepeater.count; ++i) {
 			otherTopicsRepeater.itemAt(i).children[1].text = String(bagAnnotator.getCurrentValue(Object.keys(otherTopics)[i]))
 		}
