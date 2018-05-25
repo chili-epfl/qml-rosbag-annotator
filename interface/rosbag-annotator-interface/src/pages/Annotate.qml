@@ -90,8 +90,13 @@ ScrollView {
 			}
 
 			Button {
-				text: "Advance"
-				onClicked: advance(1.0)
+				text: "Previous"
+				onClicked: previous(imageTopic)
+			}
+
+			Button {
+				text: "Next"
+				onClicked: next(imageTopic)
 			}
 
 			Button {
@@ -138,18 +143,12 @@ ScrollView {
 
 				Button {
 					text: "Previous"
-					onClicked: {
-						var prevTime = bagAnnotator.findPreviousTime(Object.keys(otherTopics)[index]);
-						seek(prevTime)
-					}
+					onClicked: previous(Object.keys(otherTopics)[index])
 				}
 
 				Button {
 					text: "Next"
-					onClicked: {
-						var nextTime = bagAnnotator.findNextTime(Object.keys(otherTopics)[index]);
-						seek(nextTime)
-					}
+					onClicked: next(Object.keys(otherTopics)[index])
 				}
 			}
 		}
@@ -192,15 +191,14 @@ ScrollView {
 		bagAnnotator.stop()
 	}
 
-	function advance(time) {
-		var playing = bagAnnotator.playing
+	function previous(topic) {
+		var prevTime = bagAnnotator.findPreviousTime(topic);
+		seek(prevTime)
+	}
 
-		bagAnnotator.stop()
-		bagAnnotator.advance(time)
-
-		if (playing) {
-			bagAnnotator.play(playbackFreq, audioTopic)
-		}
+	function next(topic) {
+		var nextTime = bagAnnotator.findNextTime(topic);
+		seek(nextTime)
 	}
 
 	function seek(position) {

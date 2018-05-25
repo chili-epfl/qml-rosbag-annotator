@@ -90,7 +90,6 @@ ApplicationWindow {
                     config.visible = true
 
                     stackView.pop()
-                    stackView.push(config)
                     drawer.close()
                 }
             }
@@ -124,7 +123,6 @@ ApplicationWindow {
                     annotate.visible = true
 
                     
-                    stackView.pop()
                     stackView.push(annotate)
                     drawer.close()
                 }
