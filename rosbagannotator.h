@@ -15,6 +15,7 @@ namespace rosbag {
 }
 
 #include <rosbag/message_instance.h>
+#include <sensor_msgs/CompressedImage.h>
 
 #include <memory>
 
@@ -86,7 +87,7 @@ private slots:
 
 private:
 	void reset();
-	void parseBag(std::unique_ptr<rosbag::Bag> &&bag);
+	void parseBag();
 	void extractMessage(const rosbag::MessageInstance &msg);
 	void playAudio(const QString &audioTopic);
 
@@ -157,6 +158,7 @@ private:
 
 	Status mStatus;
 	QString mBagPath;
+    std::unique_ptr<rosbag::Bag> mBag;
 	bool mUseRosTime;
 
 	uint64_t mStartTime;
@@ -170,6 +172,8 @@ private:
 	QVariantMap mTopics;
 	QVariantMap mTopicsByType;
 
+    typedef sensor_msgs::CompressedImage::ConstPtr ImagePtr; 
+
 	QMap<QString, QList<QPair<uint64_t, bool>>::const_iterator> mCurrentBool;
 	QMap<QString, QList<QPair<uint64_t, float>>::const_iterator> mCurrentFloat;
 	QMap<QString, QList<QPair<uint64_t, int>>::const_iterator> mCurrentInt;
@@ -177,7 +181,7 @@ private:
 	QMap<QString, QList<QPair<uint64_t, QVector2D>>::const_iterator> mCurrentVector2;
 	QMap<QString, QList<QPair<uint64_t, QVector3D>>::const_iterator> mCurrentVector3;
 	QMap<QString, QList<QPair<uint64_t, int>>::const_iterator> mCurrentAudio;
-	QMap<QString, QList<QPair<uint64_t, QImage>>::const_iterator> mCurrentImage;
+	QMap<QString, QList<QPair<uint64_t, ImagePtr>>::const_iterator> mCurrentImage;
 
 	QMap<QString, QList<QPair<uint64_t, bool>>> mBoolMsgs;
 	QMap<QString, QList<QPair<uint64_t, float>>> mFloatMsgs;
@@ -186,7 +190,7 @@ private:
 	QMap<QString, QList<QPair<uint64_t, QVector2D>>> mVector2Msgs;
 	QMap<QString, QList<QPair<uint64_t, QVector3D>>> mVector3Msgs;
 	QMap<QString, QList<QPair<uint64_t, int>>> mAudioMsgs;
-	QMap<QString, QList<QPair<uint64_t, QImage>>> mImageMsgs;
+	QMap<QString, QList<QPair<uint64_t, ImagePtr>>> mImageMsgs;
 
 	QMap<QString, QByteArray> mAudioByteArrays;
 

@@ -165,9 +165,6 @@ ScrollView {
 
 		bagAnnotator.onCurrentTimeChanged.connect(updateValues)
 		bagAnnotator.onPlayingChanged.connect(updatePlayPauseButtonState)
-
-		console.log("root width: " + root.width)
-		console.log("topLayout width: " + topLayout.width)
 	}
 
 	function updateValues(time){

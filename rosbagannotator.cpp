@@ -4,7 +4,6 @@
 #include <rosbag/view.h>
 
 #include <audio_common_msgs/AudioData.h>
-#include <sensor_msgs/CompressedImage.h>
 
 #include <chili_msgs/Bool.h>
 #include <chili_msgs/Float32.h>
@@ -45,16 +44,15 @@ void RosBagAnnotator::setBagPath(QString path) {
 	reset();
 
 	if (!mBagPath.isEmpty()) {
-		std::unique_ptr<rosbag::Bag> bag;
 		try {
-			bag.reset(new rosbag::Bag(mBagPath.toStdString()));
+			mBag.reset(new rosbag::Bag(mBagPath.toStdString()));
 		}
 		catch (const rosbag::BagException &e) {
 			qDebug() << "An exception has occured while opening bag " << mBagPath << ": " << e.what();
 			return;
 		}
 
-		parseBag(std::move(bag));
+		parseBag();
 	}
 }
 
@@ -157,6 +155,9 @@ double RosBagAnnotator::findNextTime(const QString &topic) {
 }
 
 QVariant RosBagAnnotator::getCurrentValue(const QString &topic) {
+	static sensor_msgs::CompressedImage::ConstPtr lastImagePtr = nullptr;
+	static QImage lastImage;
+
 	assert(mTopics.find(topic) != mTopics.end());
 
 	const QString &type = mTopics[topic].toString();
@@ -207,7 +208,12 @@ QVariant RosBagAnnotator::getCurrentValue(const QString &topic) {
 	else if (type == "Image") {
 		auto it = mCurrentImage[topic];
 		if (it >= mImageMsgs[topic].begin()) {
-			value = it->second;
+			if (it->second != lastImagePtr) {
+				lastImagePtr = it->second;
+				lastImage.loadFromData(lastImagePtr->data.data(), lastImagePtr->data.size(), lastImagePtr->format.c_str());
+			}
+
+			value = lastImage;
 		}
 	}
 
@@ -289,14 +295,14 @@ void RosBagAnnotator::reset() {
 	emit statusChanged(mStatus);
 }
 
-void RosBagAnnotator::parseBag(std::unique_ptr<rosbag::Bag> &&bag) {
+void RosBagAnnotator::parseBag() {
 	mStatus = PARSING;
 	emit statusChanged(mStatus);
 
 	mStartTime = std::numeric_limits<uint64_t>::max();
 	mEndTime = 0;
 
-	rosbag::View view(*bag);
+	rosbag::View view(*mBag);
 
 	for (auto it = view.begin(); it != view.end(); ++it)
 	{
@@ -407,7 +413,8 @@ void RosBagAnnotator::extractMessage(const rosbag::MessageInstance &msg) {
 		else if (type == "sensor_msgs/CompressedImage") {
 			type = "Image";
 			sensor_msgs::CompressedImage::ConstPtr m = msg.instantiate<sensor_msgs::CompressedImage>();
-			mImageMsgs[topic].append(QPair<uint64_t, QImage>(time, QImage::fromData(m->data.data(), m->data.size(), m->format.c_str())));
+			// mImageMsgs[topic].append(QPair<uint64_t, QImage>(time, QImage::fromData(m->data.data(), m->data.size(), m->format.c_str())));
+			mImageMsgs[topic].append(QPair<uint64_t, sensor_msgs::CompressedImage::ConstPtr>(time, m));
 		}
 	}
 
@@ -451,10 +458,7 @@ void RosBagAnnotator::playAudio(const QString &audioTopic) {
 		return;
 	}
 
-	qDebug() << "Playing audio from topic" << audioTopic;
-
 	// seek to correct position when setting up the buffer
-	// (QMediaPlayer can only seek asynchronously)
 	mAudioBuffer.setData(
 		mAudioByteArrays[audioTopic].constData() + currentIt->second, 
 		mAudioByteArrays[audioTopic].size() - currentIt->second
