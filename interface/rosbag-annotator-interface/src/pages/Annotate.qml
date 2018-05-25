@@ -107,8 +107,9 @@ ScrollView {
 
 		Popup {
 			id: annotationPopup
-			width: 640
-			height: 640
+			x: 0.5 * (root.width - (annotationComboRow.implicitWidth + 64))
+			width: annotationComboRow.implicitWidth + 64
+			height: annotationComboRow.implicitHeight + 64
 			modal: true
 			focus: true
 			closePolicy: Popup.NoAutoClose
@@ -121,6 +122,7 @@ ScrollView {
 				spacing: 16
 
 				RowLayout {
+					id: annotationComboRow
 					Layout.fillWidth: true
 					Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
 					spacing: 32
@@ -132,7 +134,7 @@ ScrollView {
 					ComboBox {
 						id: annotationTopicComboBox
 						editable: true
-						model: Object.keys(bagAnnotator.annotationTopics)
+						model: bagAnnotator != undefined ? Object.keys(bagAnnotator.annotationTopics) : 0
 
 					    onAccepted: {
 					        if (bagAnnotator.annotationTopics.editText === undefined) {
@@ -141,6 +143,10 @@ ScrollView {
 					            model = tmp
 					        }
 					    }
+
+						validator: RegExpValidator {
+							regExp: /^[a-zA-Z0-9_\/-]*$/
+						}
 					}
 
 					Text {
@@ -168,94 +174,89 @@ ScrollView {
 					spacing: 8
 
 					Text {
+						Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
 						text: "Value(s): "
 						font.bold: true
 					}
 
-					TextInput {
-						Layout.preferredWidth: 320
-						id: annotationValueInput
+					Rectangle {
+						Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
+						Layout.preferredWidth: annotationValueInput.preferredWidth + 8
+						Layout.preferredHeight: annotationValueInput.preferredHeight + 8
+						color: "#00000000"
+						border.width: 1
+						border.color: "#111111"
 
-						IntValidator {
-							id: boolValidator
-							bottom: 0
-							top: 1
-						}
-						IntValidator {
-							id: intValidator
-						}
-						DoubleValidator {
-							id: realValidator
-						}
-						RegExpValidator {
-							id: intArrayValidator
-							regExp: /\d{1,12}(?: *, *\d{1,12})+ *$/
-						}
-						RegExpValidator {
-							id: realArrayValidator
-							regExp: /(\d{1,12}(?:\.\d{1,12})?)(?: *, *(\d{1,12}(?:\.\d{1,12})?))+ *$/
-						}
+						TextInput {
+							Layout.preferredWidth: 320
+							Layout.preferredHeight: 80
+							id: annotationValueInput
 
-						validator: {
-							if (annotationTypeComboBox.currentIndex == 0) {
-								return boolValidator
+							IntValidator {
+								id: boolValidator
+								bottom: 0
+								top: 1
 							}
-							else if (annotationTypeComboBox.currentIndex == 1) {
-								return intValidator
+							IntValidator {
+								id: intValidator
 							}
-							else if (annotationTypeComboBox.currentIndex == 2) {
-								return realValidator
+							DoubleValidator {
+								id: realValidator
 							}
-							else if (annotationTypeComboBox.currentIndex == 3) {
-								return realValidator
+							RegExpValidator {
+								id: intArrayValidator
+								regExp: /\d{1,12}(?: *, *\d{1,12})+ *$/
 							}
-							else if (annotationTypeComboBox.currentIndex == 4) {
-								return intArrayValidator
+							RegExpValidator {
+								id: realArrayValidator
+								regExp: /(\d{1,12}(?:\.\d{1,12})?)(?: *, *(\d{1,12}(?:\.\d{1,12})?))+ *$/
 							}
-							else if (annotationTypeComboBox.currentIndex == 5) {
-								return realArrayValidator
+
+							validator: {
+								if (annotationTypeComboBox.currentIndex == 0) {
+									return boolValidator
+								}
+								else if (annotationTypeComboBox.currentIndex == 1) {
+									return intValidator
+								}
+								else if (annotationTypeComboBox.currentIndex == 2) {
+									return realValidator
+								}
+								else if (annotationTypeComboBox.currentIndex == 4) {
+									return intArrayValidator
+								}
+								else if (annotationTypeComboBox.currentIndex == 5) {
+									return realArrayValidator
+								}
 							}
 						}
 					}
 				}
 
-				// Button {
-				// 	text: "Test int"
-				// 	onClicked: bagAnnotator.annotate(annotationTopicComboBox.currentText, 1)
-				// }
-				// Button {
-				// 	text: "Test float"
-				// 	onClicked: bagAnnotator.annotate("Test", 1.1)
-				// }
-				// Button {
-				// 	text: "Test string"
-				// 	onClicked: bagAnnotator.annotate("Test", "bla")
-				// }
-				Button {
-					text: "Test string list"
-					onClicked: bagAnnotator.annotate("Test", ["bla", "la"])
-				}
-				Button {
-					text: "Test int list"
-					onClicked: bagAnnotator.annotate("Test", [1, 2, 3])
-				}
-				Button {
-					text: "Test real list"
-					onClicked: bagAnnotator.annotate("Test", [1.1, 2.2, 3.3])
-				}
-				// Button {
-				// 	text: "Test map"
-				// 	onClicked: bagAnnotator.annotate("Test", {"first": 1, "second": 2})
-				// }
-				// Button {
-				// 	text: "Test qvector"
-				// 	onClicked: bagAnnotator.annotate("Test", Qt.vector3d(0.0, 1.0, 2.0))
-				// }
 				Button {
 					Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
 					text: "Save"
+					enabled: annotationValueInput.length > 0 && annotationTopicComboBox.currentText.length > 0
 					onClicked: {
-						bagAnnotator.annotate(annotationTopicComboBox.currentText, 1)
+						if (annotationTypeComboBox.currentIndex == 0) {
+							bagAnnotator.annotate(annotationTopicComboBox.currentText, Boolean(parseInt(annotationValueInput.text)), RosBagAnnotator.BOOL)
+						}
+						else if (annotationTypeComboBox.currentIndex == 1) {
+							bagAnnotator.annotate(annotationTopicComboBox.currentText, parseInt(annotationValueInput.text), RosBagAnnotator.INT)
+						}
+						else if (annotationTypeComboBox.currentIndex == 2) {
+							bagAnnotator.annotate(annotationTopicComboBox.currentText, parseFloat(annotationValueInput.text), RosBagAnnotator.FLOAT)
+						}
+						else if (annotationTypeComboBox.currentIndex == 3) {
+							bagAnnotator.annotate(annotationTopicComboBox.currentText, annotationValueInput.text, RosBagAnnotator.STRING)
+						}
+						else if (annotationTypeComboBox.currentIndex == 4) {
+							bagAnnotator.annotate(annotationTopicComboBox.currentText, parseIntArray(annotationValueInput.text), RosBagAnnotator.INT_ARRAY)
+						}
+						else if (annotationTypeComboBox.currentIndex == 5) {
+							bagAnnotator.annotate(annotationTopicComboBox.currentText, parseFloatArray(annotationValueInput.text), RosBagAnnotator.FLOAT_ARRAY)
+						}
+
 						annotationPopup.close()
 					}
 				}
@@ -308,6 +309,7 @@ ScrollView {
 		audioTopic = config.audioTopic
 		otherTopics = config.otherTopics
 
+		next(imageTopic)
 		updateValues()
 
 		bagAnnotator.onCurrentTimeChanged.connect(updateValues)
@@ -350,7 +352,7 @@ ScrollView {
 	}
 
 	function seek(position) {
-		if (position == bagAnnotator.currentTime()) {
+		if (position == bagAnnotator.currentTime) {
 			return;
 		}
 
@@ -364,5 +366,29 @@ ScrollView {
 		if (playing) {
 			bagAnnotator.play(playbackFreq, audioTopic)
 		}
+	}
+
+	function parseIntArray(str) {
+		var tmp = str.split(",")
+		var result = []
+		for (var i = 0; i < tmp.length; ++i) {
+			result.push(parseInt(tmp[i]))
+		}
+
+		console.log(str);
+		console.log(result);
+		return result;
+	}
+
+	function parseFloatArray(str) {
+		var tmp = str.split(",")
+		var result = []
+		for (var i = 0; i < tmp.length; ++i) {
+			result.push(parseFloat(tmp[i]))
+		}
+
+		console.log(str);
+		console.log(result);
+		return result;
 	}
 }

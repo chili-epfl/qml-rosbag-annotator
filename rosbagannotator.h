@@ -42,6 +42,16 @@ public:
 	};
 	Q_ENUM(Status)
 
+	enum AnnotationType {
+		BOOL,
+		INT,
+		FLOAT,
+		STRING,
+		INT_ARRAY,
+		FLOAT_ARRAY
+	};
+	Q_ENUM(AnnotationType)
+
 	RosBagAnnotator(QQuickItem *parent = nullptr);
 	~RosBagAnnotator();
 
@@ -74,7 +84,7 @@ public slots:
 	void play(double frequency, const QString &audioTopic);
 	void stop();
 
-	void annotate(const QString &topic, const QVariant &value);
+	void annotate(const QString &topic, const QVariant &value, AnnotationType type);
 
 signals:
 	void statusChanged(Status status);
@@ -163,9 +173,7 @@ private:
 	}
 
 	template<class T>
-	void publishAnnotation(const QString &topic, const int type, const T& msg) {
-		qDebug() << QMetaType::typeName(type);
-
+	void publishAnnotation(const QString &topic, const AnnotationType type, const T& msg) {
 		if (mStatus != READY) {
 			qDebug() << "Cannot publish annotation because bag isn't ready!";
 			return;
@@ -173,7 +181,7 @@ private:
 
 		auto it = mAnnotationTopics.find(topic);
 		if (it != mAnnotationTopics.end()) {
-			if (it->toInt() != type) {
+			if (it->value<AnnotationType>() != type) {
 				qDebug() << "Cannot publish different type to existing topic!";
 				return;
 			}
@@ -186,7 +194,7 @@ private:
 		ros::Time time;
 		time.fromNSec(mCurrentTime);
 		std::string annotationTopic = ("/annotation/" + topic).toStdString();
-		qDebug() << "Writing annotation to topic" << annotationTopic.c_str();
+		qDebug() << "Writing annotation of type" << type << "to topic" << annotationTopic.c_str();
 		// mBag->write(annotationTopic, time, msg);
 	}
 

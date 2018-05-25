@@ -7,6 +7,7 @@
 #include <std_msgs/Int32.h>
 #include <std_msgs/Float64.h>
 #include <std_msgs/String.h>
+#include <std_msgs/Int32MultiArray.h>
 #include <std_msgs/Float64MultiArray.h>
 #include <audio_common_msgs/AudioData.h>
 
@@ -250,53 +251,46 @@ void RosBagAnnotator::stop() {
 	emit playingChanged(false);
 }
 
-void RosBagAnnotator::annotate(const QString &topic, const QVariant &value) {
-	qDebug() << "Annotation topic:" << topic;
-
-	const int type(value.type());
-
-	if (type == QMetaType::Bool) {
+void RosBagAnnotator::annotate(const QString &topic, const QVariant &value, const AnnotationType type) {
+	// Input validation should occur before passing a value to this function.
+	// Invalid inputs will result in default-constructed values being written to the bag.
+	if (type == BOOL) {
 		std_msgs::Bool msg;
 		msg.data = value.toBool();
 		publishAnnotation(topic, type, msg);
 	}
-	else if (type == QMetaType::Int) {
+	else if (type == INT) {
 		std_msgs::Int32 msg;
 		msg.data = value.toInt();
 		publishAnnotation(topic, type, msg);
 	}
-	else if (type == QMetaType::Double) {
+	else if (type == FLOAT) {
 		std_msgs::Float64 msg;
 		msg.data = value.toDouble();
 		publishAnnotation(topic, type, msg);
 	}
-	else if (type == QMetaType::QString) {
+	else if (type == STRING) {
 		std_msgs::String msg;
 		msg.data = value.toString().toStdString();
 		publishAnnotation(topic, type, msg);
 	}
-	else if (QString(value.typeName()) == "QJSValue") {
+	else if (type == INT_ARRAY || type == FLOAT_ARRAY) {
 		QJSValue jsValue = value.value<QJSValue>();
-		if (jsValue.isArray()) {
-			int length = jsValue.property("length").toInt();
-			if (length > 0) {
-				QVariant first(jsValue.property(0).toVariant());
-				QMetaType::Type variantType(static_cast<QMetaType::Type>(first.type()));
-				if (variantType == QMetaType::Int) {
-					std_msgs::Int32MultiArray msg;
-					for (int i = 0; i < length; ++i) {
-						msg.data.push_back(jsValue.property(i).toInt());
-					}
-					publishAnnotation(topic, type, msg);
-				}
-				else if (variantType == QMetaType::Double) {
-					std_msgs::Float64MultiArray msg;
-					for (int i = 0; i < length; ++i) {
-						msg.data.push_back(jsValue.property(i).toNumber());
-					}
-					publishAnnotation(topic, type, msg);
-				}
+		int length = jsValue.property("length").toInt();
+
+		if (type == INT_ARRAY) {
+			std_msgs::Int32MultiArray msg;
+			for (int i = 0; i < length; ++i) {
+				msg.data.push_back(jsValue.property(i).toInt());
 			}
+			publishAnnotation(topic, type, msg);
+		}
+		else {
+			std_msgs::Float64MultiArray msg;
+			for (int i = 0; i < length; ++i) {
+				msg.data.push_back(jsValue.property(i).toInt());
+			}
+			publishAnnotation(topic, type, msg);
 		}
 	}
 }
