@@ -70,26 +70,26 @@ ScrollView {
 			}
 
 			Popup {
-		        id: loadingPopup
+				id: loadingPopup
 				x: 0.5 * (root.width - (popupText.implicitWidth + 64))
 				y: 128
-		        width: popupText.implicitWidth + 64
-		        height: popupText.implicitHeight + 64
-		        modal: true
-		        focus: true
-		        closePolicy: Popup.NoAutoClose
+				width: popupText.implicitWidth + 64
+				height: popupText.implicitHeight + 64
+				modal: true
+				focus: true
+				closePolicy: Popup.NoAutoClose
 
-		        RowLayout {
+				RowLayout {
 					anchors.fill: parent
 
-			        Text {
-			        	id: popupText
+					Text {
+						id: popupText
 						Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
-			        	font.bold: true
-			        	text: "Parsing bag contents..."
-			        }
-			    }
-		    }
+						font.bold: true
+						text: "Parsing bag contents..."
+					}
+				}
+			}
 		}
 
 		GridLayout {
@@ -247,8 +247,8 @@ ScrollView {
 		}
 	}
 
-    function load() {
-    	loadingPopup.open()
+	function load() {
+		loadingPopup.open()
 
 		annotator.setUseRosTime(useRosTimeCheckBox.checked)
 		annotator.setBagPath(bagFilePath.text)
@@ -263,8 +263,8 @@ ScrollView {
 
 		selectableTopics = new Object(temp)
 
-    	loadingPopup.close()
-    }
+		loadingPopup.close()
+	}
 
 	function save() {
 		imageTopic = imageTopicComboBox.currentText

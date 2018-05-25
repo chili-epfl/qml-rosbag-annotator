@@ -31,6 +31,7 @@ class RosBagAnnotator : public QQuickItem
 	Q_PROPERTY(double currentTime READ currentTime WRITE setCurrentTime NOTIFY currentTimeChanged)
 	Q_PROPERTY(QVariantMap topics READ topics NOTIFY topicsChanged)
 	Q_PROPERTY(QVariantMap topicsByType READ topicsByType NOTIFY topicsByTypeChanged)
+	Q_PROPERTY(QVariantMap annotationTopics READ annotationTopics NOTIFY annotationTopicsChanged)
 	Q_PROPERTY(bool playing READ playing NOTIFY playingChanged)
 
 public:
@@ -52,6 +53,7 @@ public:
 	const QVariantMap &topics() const { return mTopics; }
 	const QVariantMap &topicsByType() const { return mTopicsByType; }
 	bool playing() const { return mMediaPlayer.state() == QMediaPlayer::PlayingState; }
+	const QVariantMap &annotationTopics() const { return mAnnotationTopics; }
 
 public slots:
 	void setBagPath(QString path);
@@ -72,6 +74,8 @@ public slots:
 	void play(double frequency, const QString &audioTopic);
 	void stop();
 
+	void annotate(const QString &topic, const QVariant &value);
+
 signals:
 	void statusChanged(Status status);
 	void bagPathChanged(const QString &path);
@@ -81,6 +85,7 @@ signals:
 	void topicsChanged(const QVariantMap &topics);
 	void topicsByTypeChanged(const QVariantMap &topicsByType);
 	void playingChanged(bool playing);
+	void annotationTopicsChanged(const QVariantMap &annotationTopics);
 
 private slots:
 	void updatePlayback();
@@ -90,6 +95,7 @@ private:
 	void parseBag();
 	void extractMessage(const rosbag::MessageInstance &msg);
 	void playAudio(const QString &audioTopic);
+
 
 	template<class T>
 	uint64_t extractChiliMessageTime(const T msg) {
@@ -156,9 +162,37 @@ private:
 		}
 	}
 
+	template<class T>
+	void publishAnnotation(const QString &topic, const int type, const T& msg) {
+		qDebug() << QMetaType::typeName(type);
+
+		if (mStatus != READY) {
+			qDebug() << "Cannot publish annotation because bag isn't ready!";
+			return;
+		}
+
+		auto it = mAnnotationTopics.find(topic);
+		if (it != mAnnotationTopics.end()) {
+			if (it->toInt() != type) {
+				qDebug() << "Cannot publish different type to existing topic!";
+				return;
+			}
+		}
+		else {
+			mAnnotationTopics.insert(topic, type);
+			emit annotationTopicsChanged(mAnnotationTopics);
+		}
+
+		ros::Time time;
+		time.fromNSec(mCurrentTime);
+		std::string annotationTopic = ("/annotation/" + topic).toStdString();
+		qDebug() << "Writing annotation to topic" << annotationTopic.c_str();
+		// mBag->write(annotationTopic, time, msg);
+	}
+
 	Status mStatus;
 	QString mBagPath;
-    std::unique_ptr<rosbag::Bag> mBag;
+	std::unique_ptr<rosbag::Bag> mBag;
 	bool mUseRosTime;
 
 	uint64_t mStartTime;
@@ -172,7 +206,7 @@ private:
 	QVariantMap mTopics;
 	QVariantMap mTopicsByType;
 
-    typedef sensor_msgs::CompressedImage::ConstPtr ImagePtr; 
+	typedef sensor_msgs::CompressedImage::ConstPtr ImagePtr; 
 
 	QMap<QString, QList<QPair<uint64_t, bool>>::const_iterator> mCurrentBool;
 	QMap<QString, QList<QPair<uint64_t, float>>::const_iterator> mCurrentFloat;
@@ -197,6 +231,8 @@ private:
 	QString mAudioTopic;
 	QBuffer mAudioBuffer;
 	QMediaPlayer mMediaPlayer;
+
+	QVariantMap mAnnotationTopics;
 };
 
 #endif // ROSBAGANNOTATOR_H

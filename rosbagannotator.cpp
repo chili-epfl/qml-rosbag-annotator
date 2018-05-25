@@ -3,6 +3,11 @@
 #include <rosbag/bag.h>
 #include <rosbag/view.h>
 
+#include <std_msgs/Bool.h>
+#include <std_msgs/Int32.h>
+#include <std_msgs/Float64.h>
+#include <std_msgs/String.h>
+#include <std_msgs/Float64MultiArray.h>
 #include <audio_common_msgs/AudioData.h>
 
 #include <chili_msgs/Bool.h>
@@ -243,6 +248,57 @@ void RosBagAnnotator::stop() {
 	mAudioBuffer.close();
 
 	emit playingChanged(false);
+}
+
+void RosBagAnnotator::annotate(const QString &topic, const QVariant &value) {
+	qDebug() << "Annotation topic:" << topic;
+
+	const int type(value.type());
+
+	if (type == QMetaType::Bool) {
+		std_msgs::Bool msg;
+		msg.data = value.toBool();
+		publishAnnotation(topic, type, msg);
+	}
+	else if (type == QMetaType::Int) {
+		std_msgs::Int32 msg;
+		msg.data = value.toInt();
+		publishAnnotation(topic, type, msg);
+	}
+	else if (type == QMetaType::Double) {
+		std_msgs::Float64 msg;
+		msg.data = value.toDouble();
+		publishAnnotation(topic, type, msg);
+	}
+	else if (type == QMetaType::QString) {
+		std_msgs::String msg;
+		msg.data = value.toString().toStdString();
+		publishAnnotation(topic, type, msg);
+	}
+	else if (QString(value.typeName()) == "QJSValue") {
+		QJSValue jsValue = value.value<QJSValue>();
+		if (jsValue.isArray()) {
+			int length = jsValue.property("length").toInt();
+			if (length > 0) {
+				QVariant first(jsValue.property(0).toVariant());
+				QMetaType::Type variantType(static_cast<QMetaType::Type>(first.type()));
+				if (variantType == QMetaType::Int) {
+					std_msgs::Int32MultiArray msg;
+					for (int i = 0; i < length; ++i) {
+						msg.data.push_back(jsValue.property(i).toInt());
+					}
+					publishAnnotation(topic, type, msg);
+				}
+				else if (variantType == QMetaType::Double) {
+					std_msgs::Float64MultiArray msg;
+					for (int i = 0; i < length; ++i) {
+						msg.data.push_back(jsValue.property(i).toNumber());
+					}
+					publishAnnotation(topic, type, msg);
+				}
+			}
+		}
+	}
 }
 
 void RosBagAnnotator::updatePlayback() {
