@@ -68,28 +68,6 @@ ScrollView {
 				text: "Choose file"
 				onClicked: bagFileDialog.open()
 			}
-
-			Popup {
-				id: loadingPopup
-				x: 0.5 * (root.width - (popupText.implicitWidth + 64))
-				y: 128
-				width: popupText.implicitWidth + 64
-				height: popupText.implicitHeight + 64
-				modal: true
-				focus: true
-				closePolicy: Popup.NoAutoClose
-
-				RowLayout {
-					anchors.fill: parent
-
-					Text {
-						id: popupText
-						Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
-						font.bold: true
-						text: "Parsing bag contents..."
-					}
-				}
-			}
 		}
 
 		GridLayout {
@@ -175,6 +153,15 @@ ScrollView {
 				model: annotator.topicsByType["Audio"]
 				onActivated: audioTopic = audioTopicComboBox.currentText
 			}
+
+			Rectangle {
+				Layout.preferredWidth: 0.9 * root.width
+				Layout.preferredHeight: 1
+				Layout.columnSpan: 2
+				Layout.bottomMargin: 8
+				Layout.topMargin: 8
+				color: "#111111"
+			}
 		}
 
 		RowLayout {
@@ -184,10 +171,10 @@ ScrollView {
 			Layout.bottomMargin: 8
 
 			Button {
-				text: topicHeader.visible ? "Hide topic list" : "Show topic list"
+				enabled: bagFilePath.length > 0
+				text: "Reload topics"
 				onClicked: {
-					topicHeader.visible = !topicHeader.visible
-					topicRepeater.visible = !topicRepeater.visible
+					load()
 				}
 			}
 		}
@@ -202,21 +189,23 @@ ScrollView {
 
 			Text {
 				id: nameText
-				Layout.preferredWidth: 0.4 * root.width
+				Layout.preferredWidth: 0.45 * root.width
 				text: "Name"
 				font.bold: true
 			}
 
 			Text {
 				id: typeText
-				Layout.preferredWidth: 0.3 * root.width
+				Layout.preferredWidth: 0.25 * root.width
 				text: "Type"
 				font.bold: true
 			}
 
 			Text {
+				Layout.preferredWidth: 0.1 * root.width
+				Layout.alignment: Qt.AlignHCenter | At.AlignVCenter
 				id: displayText
-				text: "Display?"
+				text: "Show?"
 				font.bold: true
 			}
 		}
@@ -226,30 +215,29 @@ ScrollView {
 			model: Object.keys(selectableTopics).length
 
 			RowLayout {
-				Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
 				Layout.fillWidth: true
+				Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
 				spacing: 4
 
 				Text {
-					Layout.preferredWidth: 0.4 * root.width
+					Layout.preferredWidth: 0.45 * root.width
 					text: Object.keys(selectableTopics)[index]
 				}
 
 				Text {
-					Layout.preferredWidth: 0.3 * root.width
+					Layout.preferredWidth: 0.25 * root.width
 					text: selectableTopics[Object.keys(selectableTopics)[index]]
 				}
 
 				CheckBox {
-					Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+					Layout.preferredWidth: 0.1 * root.width
+					Layout.alignment: Qt.AlignHCenter | At.AlignVCenter
 				}
 			}
 		}
 	}
 
 	function load() {
-		loadingPopup.open()
-
 		annotator.setUseRosTime(useRosTimeCheckBox.checked)
 		annotator.setBagPath(bagFilePath.text)
 
@@ -262,8 +250,6 @@ ScrollView {
 		}
 
 		selectableTopics = new Object(temp)
-
-		loadingPopup.close()
 	}
 
 	function save() {

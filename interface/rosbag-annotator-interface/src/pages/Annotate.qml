@@ -45,7 +45,6 @@ ScrollView {
 			Layout.preferredWidth: 0.8 * root.width
 			Layout.preferredHeight: 30
 
-
 			color: "lightGray"
 
 			Rectangle {
@@ -109,7 +108,6 @@ ScrollView {
 			id: annotationPopup
 			x: 0.5 * (root.width - (annotationComboRow.implicitWidth + 64))
 			width: annotationComboRow.implicitWidth + 64
-			height: annotationComboRow.implicitHeight + 64
 			modal: true
 			focus: true
 			closePolicy: Popup.NoAutoClose
@@ -160,14 +158,6 @@ ScrollView {
 					}
 				}
 
-				Rectangle {
-					Layout.fillWidth: true
-					Layout.preferredHeight: 1
-					Layout.bottomMargin: 16
-					Layout.topMargin: 16
-					color: "#111111"
-				}
-
 				RowLayout {
 					Layout.fillWidth: true
 					Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
@@ -179,17 +169,19 @@ ScrollView {
 						font.bold: true
 					}
 
-					Rectangle {
-						Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
-						Layout.preferredWidth: annotationValueInput.preferredWidth + 8
-						Layout.preferredHeight: annotationValueInput.preferredHeight + 8
-						color: "#00000000"
-						border.width: 1
-						border.color: "#111111"
+					// Rectangle {
+					// 	Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
+					// 	Layout.preferredWidth: annotationValueInput.preferredWidth + 4
+					// 	Layout.preferredHeight: annotationValueInput.preferredHeight + 4
+					// 	color: "#00000000"
+					// 	border.width: 1
+					// 	border.color: "#111111"
 
 						TextInput {
 							Layout.preferredWidth: 320
-							Layout.preferredHeight: 80
+							Layout.margins: 8
+							Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
+
 							id: annotationValueInput
 
 							IntValidator {
@@ -202,6 +194,10 @@ ScrollView {
 							}
 							DoubleValidator {
 								id: realValidator
+							}
+							RegExpValidator {
+								id: stringValidator
+								regExp: /.*$/
 							}
 							RegExpValidator {
 								id: intArrayValidator
@@ -222,6 +218,9 @@ ScrollView {
 								else if (annotationTypeComboBox.currentIndex == 2) {
 									return realValidator
 								}
+								else if (annotationTypeComboBox.currentIndex == 3) {
+									return stringValidator
+								}
 								else if (annotationTypeComboBox.currentIndex == 4) {
 									return intArrayValidator
 								}
@@ -230,10 +229,11 @@ ScrollView {
 								}
 							}
 						}
-					}
+					// }
 				}
 
 				Button {
+					Layout.margins: 32
 					Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
 					text: "Save"
 					enabled: annotationValueInput.length > 0 && annotationTopicComboBox.currentText.length > 0

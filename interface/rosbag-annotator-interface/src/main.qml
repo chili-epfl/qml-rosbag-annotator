@@ -15,7 +15,7 @@ ApplicationWindow {
 	visible: true
 
 	property bool mobile: Qt.platform.os === "android"
-	width: mobile ? Screen.width : 960
+	width: mobile ? Screen.width : 1280
 	height: mobile ? Screen.height : 960
 
 	Config {
