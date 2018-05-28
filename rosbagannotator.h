@@ -3,6 +3,7 @@
 
 #include <QQuickItem>
 #include <QBuffer>
+#include <QFileInfo>
 #include <QImage>
 #include <QMediaPlayer>
 #include <QTimer>
@@ -26,6 +27,7 @@ class RosBagAnnotator : public QQuickItem
 
 	Q_PROPERTY(QString bagPath READ bagPath WRITE setBagPath NOTIFY bagPathChanged)
 	Q_PROPERTY(bool useRosTime READ useRosTime WRITE setUseRosTime NOTIFY useRosTimeChanged)
+	Q_PROPERTY(bool useSeparateBag READ useSeparateBag WRITE setUseSeparateBag NOTIFY useSeparateBagChanged)
 	Q_PROPERTY(Status status READ status NOTIFY statusChanged)
 	Q_PROPERTY(double length READ length NOTIFY lengthChanged)
 	Q_PROPERTY(double currentTime READ currentTime WRITE setCurrentTime NOTIFY currentTimeChanged)
@@ -48,7 +50,7 @@ public:
 		FLOAT,
 		STRING,
 		INT_ARRAY,
-		FLOAT_ARRAY
+		DOUBLE_ARRAY
 	};
 	Q_ENUM(AnnotationType)
 
@@ -58,6 +60,7 @@ public:
 	Status status() const { return mStatus; }
 	const QString &bagPath() const { return mBagPath; }
 	bool useRosTime() const { return mUseRosTime; }
+	bool useSeparateBag() const { return mUseSeparateBag; }
 	double length() const { return 1e-9 * (mEndTime - mStartTime); }
 	double currentTime() const { return 1e-9 * (mCurrentTime - mStartTime); }
 	const QVariantMap &topics() const { return mTopics; }
@@ -70,6 +73,10 @@ public slots:
 	void setUseRosTime(bool use) {
 		mUseRosTime = use;
 		emit useRosTimeChanged(use);
+	}
+	void setUseSeparateBag(bool use) {
+		mUseSeparateBag = use;
+		emit useSeparateBagChanged(use);
 	}
 
 	void setCurrentTime(double time);
@@ -90,6 +97,7 @@ signals:
 	void statusChanged(Status status);
 	void bagPathChanged(const QString &path);
 	void useRosTimeChanged(bool use);
+	void useSeparateBagChanged(bool use);
 	void lengthChanged(double length);
 	void currentTimeChanged(double time);
 	void topicsChanged(const QVariantMap &topics);
@@ -195,13 +203,34 @@ private:
 		time.fromNSec(mCurrentTime);
 		std::string annotationTopic = ("/annotation/" + topic).toStdString();
 		qDebug() << "Writing annotation of type" << type << "to topic" << annotationTopic.c_str();
-		// mBag->write(annotationTopic, time, msg);
+
+		QString annotationBagPath = mBagPath;
+		rosbag::bagmode::BagMode mode = rosbag::bagmode::Append;
+		if (mUseSeparateBag) {
+			annotationBagPath.replace(".bag", "-annotations.bag");
+
+			if (!QFileInfo::exists(annotationBagPath)) {
+				mode = rosbag::bagmode::Write;
+			}
+		}
+
+		try {
+			mAnnotationBag.reset(new rosbag::Bag());
+			mAnnotationBag->open(annotationBagPath.toStdString(), mode);
+			mAnnotationBag->write(annotationTopic, time, msg);
+			mAnnotationBag->close();
+		}
+		catch (const rosbag::BagException &e) {
+			qDebug() << "An exception ocurred while writing annotation to bag:" << e.what();
+		}
 	}
 
 	Status mStatus;
 	QString mBagPath;
 	std::unique_ptr<rosbag::Bag> mBag;
+	std::unique_ptr<rosbag::Bag> mAnnotationBag;
 	bool mUseRosTime;
+	bool mUseSeparateBag;
 
 	uint64_t mStartTime;
 	uint64_t mEndTime;
@@ -222,6 +251,8 @@ private:
 	QMap<QString, QList<QPair<uint64_t, QString>>::const_iterator> mCurrentString;
 	QMap<QString, QList<QPair<uint64_t, QVector2D>>::const_iterator> mCurrentVector2;
 	QMap<QString, QList<QPair<uint64_t, QVector3D>>::const_iterator> mCurrentVector3;
+	QMap<QString, QList<QPair<uint64_t, QList<QVariant>>>::const_iterator> mCurrentIntArray;
+	QMap<QString, QList<QPair<uint64_t, QList<QVariant>>>::const_iterator> mCurrentDoubleArray;
 	QMap<QString, QList<QPair<uint64_t, int>>::const_iterator> mCurrentAudio;
 	QMap<QString, QList<QPair<uint64_t, ImagePtr>>::const_iterator> mCurrentImage;
 
@@ -231,6 +262,8 @@ private:
 	QMap<QString, QList<QPair<uint64_t, QString>>> mStringMsgs;
 	QMap<QString, QList<QPair<uint64_t, QVector2D>>> mVector2Msgs;
 	QMap<QString, QList<QPair<uint64_t, QVector3D>>> mVector3Msgs;
+	QMap<QString, QList<QPair<uint64_t, QList<QVariant>>>> mIntArrayMsgs;
+	QMap<QString, QList<QPair<uint64_t, QList<QVariant>>>> mDoubleArrayMsgs;
 	QMap<QString, QList<QPair<uint64_t, int>>> mAudioMsgs;
 	QMap<QString, QList<QPair<uint64_t, ImagePtr>>> mImageMsgs;
 

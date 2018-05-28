@@ -110,7 +110,6 @@ ScrollView {
 			width: 640
 			modal: true
 			focus: true
-			closePolicy: Popup.NoAutoClose
 
 			ColumnLayout {
 				anchors.horizontalCenter: parent.horizontalCenter
@@ -245,7 +244,7 @@ ScrollView {
 				}
 
 				Button {
-					Layout.margins: 32
+					Layout.margins: 16
 					Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
 					text: "Save"
 					enabled: annotationValueInput.length > 0 && annotationTopicComboBox.currentText.length > 0
@@ -266,7 +265,7 @@ ScrollView {
 							bagAnnotator.annotate(annotationTopicComboBox.currentText, parseIntArray(annotationValueInput.text), RosBagAnnotator.INT_ARRAY)
 						}
 						else if (annotationTypeComboBox.currentIndex == 5) {
-							bagAnnotator.annotate(annotationTopicComboBox.currentText, parseFloatArray(annotationValueInput.text), RosBagAnnotator.FLOAT_ARRAY)
+							bagAnnotator.annotate(annotationTopicComboBox.currentText, parseFloatArray(annotationValueInput.text), RosBagAnnotator.DOUBLE_ARRAY)
 						}
 
 						annotationPopup.close()
@@ -320,6 +319,8 @@ ScrollView {
 		imageTopic = config.imageTopic
 		audioTopic = config.audioTopic
 		otherTopics = config.otherTopics
+
+		bagAnnotator.setUseSeparateBag(config.useSeparateBag)
 
 		next(imageTopic)
 		updateValues()

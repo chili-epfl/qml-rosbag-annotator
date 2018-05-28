@@ -13,6 +13,7 @@ ScrollView {
 
 	property var title: qsTr("Configure your annotation session")
 	property var bagAnnotator
+	property var useSeparateBag: true
 	property var imageTopic
 	property var audioTopic
 	property var otherTopics: new Object({})
@@ -88,6 +89,16 @@ ScrollView {
 				checked: true
 			}
 
+			Text {
+				Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+				text: "Save annotations to separate rosbag?"
+			}
+
+			CheckBox {
+				id: useSeparateBagCheckBox
+				checked: true
+			}
+
 			Rectangle {
 				Layout.preferredWidth: 0.9 * root.width
 				Layout.preferredHeight: 1
@@ -137,7 +148,6 @@ ScrollView {
 				Layout.preferredWidth: 0.4 * root.width
 
 				model: annotator.topicsByType["Image"]
-				onActivated: imageTopic = imageTopicComboBox.currentText
 			}
 
 			Text {
@@ -151,7 +161,6 @@ ScrollView {
 				Layout.preferredWidth: 0.4 * root.width
 
 				model: annotator.topicsByType["Audio"]
-				onActivated: audioTopic = audioTopicComboBox.currentText
 			}
 
 			Rectangle {
@@ -247,12 +256,15 @@ ScrollView {
 				annotator.topics[Object.keys(annotator.topics)[i]] != "Image") {
 				temp[Object.keys(annotator.topics)[i]] = annotator.topics[Object.keys(annotator.topics)[i]]
 			}
+
+			console.log(Object.keys(annotator.topics)[i])
 		}
 
 		selectableTopics = new Object(temp)
 	}
 
 	function save() {
+		useSeparateBag = useSeparateBagCheckBox.checked
 		imageTopic = imageTopicComboBox.currentText
 		audioTopic = audioTopicComboBox.currentText
 

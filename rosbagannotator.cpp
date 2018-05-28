@@ -59,6 +59,10 @@ void RosBagAnnotator::setBagPath(QString path) {
 		}
 
 		parseBag();
+		
+		qDebug() << "mTopics.count() after parsing:" << mTopics.count();
+
+		mBag->close();
 	}
 }
 
@@ -78,6 +82,8 @@ void RosBagAnnotator::setCurrentTime(double time) {
 	seekCurrentMessageIndices(mStringMsgs, mCurrentString);
 	seekCurrentMessageIndices(mVector2Msgs, mCurrentVector2);
 	seekCurrentMessageIndices(mVector3Msgs, mCurrentVector3);
+	seekCurrentMessageIndices(mIntArrayMsgs, mCurrentIntArray);
+	seekCurrentMessageIndices(mDoubleArrayMsgs, mCurrentDoubleArray);
 	seekCurrentMessageIndices(mAudioMsgs, mCurrentAudio);
 	seekCurrentMessageIndices(mImageMsgs, mCurrentImage);
 
@@ -116,6 +122,12 @@ double RosBagAnnotator::findPreviousTime(const QString &topic) {
 	else if (type == "Vector3") {
 		prevTime = previousMessageTime(mVector3Msgs[topic], mCurrentVector3[topic]);
 	}
+	else if (type == "IntArray") {
+		prevTime = previousMessageTime(mIntArrayMsgs[topic], mCurrentIntArray[topic]);
+	}
+	else if (type == "DoubleArray") {
+		prevTime = previousMessageTime(mDoubleArrayMsgs[topic], mCurrentDoubleArray[topic]);
+	}
 	else if (type == "Audio") {
 		prevTime = previousMessageTime(mAudioMsgs[topic], mCurrentAudio[topic]);
 	}
@@ -150,6 +162,12 @@ double RosBagAnnotator::findNextTime(const QString &topic) {
 	else if (type == "Vector3") {
 		nextTime = nextMessageTime(mVector3Msgs[topic], mCurrentVector3[topic]);
 	}
+	else if (type == "IntArray") {
+		nextTime = nextMessageTime(mIntArrayMsgs[topic], mCurrentIntArray[topic]);
+	}
+	else if (type == "DoubleArray") {
+		nextTime = nextMessageTime(mDoubleArrayMsgs[topic], mCurrentDoubleArray[topic]);
+	}
 	else if (type == "Audio") {
 		nextTime = nextMessageTime(mAudioMsgs[topic], mCurrentAudio[topic]);
 	}
@@ -164,10 +182,14 @@ QVariant RosBagAnnotator::getCurrentValue(const QString &topic) {
 	static sensor_msgs::CompressedImage::ConstPtr lastImagePtr = nullptr;
 	static QImage lastImage;
 
-	assert(mTopics.find(topic) != mTopics.end());
-
-	const QString &type = mTopics[topic].toString();
 	QVariant value;
+
+	auto it = mTopics.find(topic);
+	if (it == mTopics.end()) {
+		return value;
+	}
+
+	const QString type = it.value().toString();
 
 	if (type == "Bool") {
 		auto it = mCurrentBool[topic];
@@ -202,6 +224,18 @@ QVariant RosBagAnnotator::getCurrentValue(const QString &topic) {
 	else if (type == "Vector3") {
 		auto it = mCurrentVector3[topic];
 		if (it >= mVector3Msgs[topic].begin()) {
+			value = it->second;
+		}
+	}
+	else if (type == "IntArray") {
+		auto it = mCurrentIntArray[topic];
+		if (it >= mIntArrayMsgs[topic].begin()) {
+			value = it->second;
+		}
+	}
+	else if (type == "DoubleArray") {
+		auto it = mCurrentDoubleArray[topic];
+		if (it >= mDoubleArrayMsgs[topic].begin()) {
 			value = it->second;
 		}
 	}
@@ -274,7 +308,7 @@ void RosBagAnnotator::annotate(const QString &topic, const QVariant &value, cons
 		msg.data = value.toString().toStdString();
 		publishAnnotation(topic, type, msg);
 	}
-	else if (type == INT_ARRAY || type == FLOAT_ARRAY) {
+	else if (type == INT_ARRAY || type == DOUBLE_ARRAY) {
 		QJSValue jsValue = value.value<QJSValue>();
 		int length = jsValue.property("length").toInt();
 
@@ -322,6 +356,8 @@ void RosBagAnnotator::reset() {
 	mCurrentString.clear();
 	mCurrentVector2.clear();
 	mCurrentVector3.clear();
+	mCurrentIntArray.clear();
+	mCurrentDoubleArray.clear();
 	mCurrentAudio.clear();
 	mCurrentImage.clear();
 
@@ -331,18 +367,21 @@ void RosBagAnnotator::reset() {
 	mStringMsgs.clear();
 	mVector2Msgs.clear();
 	mVector3Msgs.clear();
+	mIntArrayMsgs.clear();
+	mDoubleArrayMsgs.clear();
 	mAudioMsgs.clear();
 	mImageMsgs.clear();
 
 	mAudioByteArrays.clear();
 
+	mStatus = EMPTY;
+	emit statusChanged(mStatus);
 	emit lengthChanged(length());
 	emit topicsChanged(mTopics);
 	emit topicsByTypeChanged(mTopicsByType);
 	emit currentTimeChanged(0.0);
 
-	mStatus = EMPTY;
-	emit statusChanged(mStatus);
+	qDebug() << "mTopics.count() after reset:" << mTopics.count();
 }
 
 void RosBagAnnotator::parseBag() {
@@ -383,89 +422,122 @@ void RosBagAnnotator::extractMessage(const rosbag::MessageInstance &msg) {
 	QString type(msg.getDataType().c_str());
 	uint64_t time = msg.getTime().toNSec();
 
-	if (type.startsWith("chili_msgs")) {
-		if (type == "chili_msgs/Bool") {
-			type = "Bool";
-			chili_msgs::Bool::ConstPtr m = msg.instantiate<chili_msgs::Bool>();
-			if (!mUseRosTime) {
-				time = extractChiliMessageTime(m);
-			}
-
-			mBoolMsgs[topic].append(QPair<uint64_t, bool>(time, m->value));
+	if (type == "chili_msgs/Bool") {
+		type = "Bool";
+		chili_msgs::Bool::ConstPtr m = msg.instantiate<chili_msgs::Bool>();
+		if (!mUseRosTime) {
+			time = extractChiliMessageTime(m);
 		}
-		else if (type == "chili_msgs/Float32") {
-			type = "Float";
-			chili_msgs::Float32::ConstPtr m = msg.instantiate<chili_msgs::Float32>();
-			if (!mUseRosTime) {
-				time = extractChiliMessageTime(m);
-			}
 
-			mFloatMsgs[topic].append(QPair<uint64_t, float>(time, m->value));
-		}
-		else if (type == "chili_msgs/Int32"){
-			type = "Int";
-			chili_msgs::Int32::ConstPtr m = msg.instantiate<chili_msgs::Int32>();
-			if (!mUseRosTime) {
-				time = extractChiliMessageTime(m);
-			}
-
-			mIntMsgs[topic].append(QPair<uint64_t, int>(time, m->value));
-		}
-		else if (type == "chili_msgs/String"){
-			type = "String";
-			chili_msgs::String::ConstPtr m = msg.instantiate<chili_msgs::String>();
-			if (!mUseRosTime) {
-				time = extractChiliMessageTime(m);
-			}
-
-			mStringMsgs[topic].append(QPair<uint64_t, QString>(time, m->value.c_str()));
-		}
-		else if (type == "chili_msgs/Vector2Float32"){
-			type = "Vector2";
-			chili_msgs::Vector2Float32::ConstPtr m = msg.instantiate<chili_msgs::Vector2Float32>();
-			if (!mUseRosTime) {
-				time = extractChiliMessageTime(m);
-			}
-
-			mVector2Msgs[topic].append(QPair<uint64_t, QVector2D>(time, QVector2D(m->x, m->y)));
-		}
-		else if (type == "chili_msgs/Vector2Int32"){
-			type = "Vector2";
-			chili_msgs::Vector2Int32::ConstPtr m = msg.instantiate<chili_msgs::Vector2Int32>();
-			if (!mUseRosTime) {
-				time = extractChiliMessageTime(m);
-			}
-
-			mVector2Msgs[topic].append(QPair<uint64_t, QVector2D>(time, QVector2D(m->x, m->y)));
-		}
-		else if (type == "chili_msgs/Vector3Float32"){
-			type = "Vector3";
-			chili_msgs::Vector3Float32::ConstPtr m = msg.instantiate<chili_msgs::Vector3Float32>();
-			if (!mUseRosTime) {
-				time = extractChiliMessageTime(m);
-			}
-
-			mVector3Msgs[topic].append(QPair<uint64_t, QVector3D>(time, QVector3D(m->x, m->y, m->z)));
-		}
+		mBoolMsgs[topic].append(QPair<uint64_t, bool>(time, m->value));
 	}
-	else {
-		if (type == "audio_common_msgs/AudioData") {
-			type = "Audio";
-			audio_common_msgs::AudioData::ConstPtr m = msg.instantiate<audio_common_msgs::AudioData>();
-
-			if (mAudioByteArrays.find(topic) == mAudioByteArrays.end()) {
-				mAudioByteArrays.insert(topic, QByteArray());
-			}
-
-			mAudioMsgs[topic].append(QPair<uint64_t, int>(time, mAudioByteArrays[topic].size()));
-			mAudioByteArrays[topic].append(QByteArray(reinterpret_cast<const char *>(m->data.data()), m->data.size()));
+	else if (type == "chili_msgs/Float32") {
+		type = "Float";
+		chili_msgs::Float32::ConstPtr m = msg.instantiate<chili_msgs::Float32>();
+		if (!mUseRosTime) {
+			time = extractChiliMessageTime(m);
 		}
-		else if (type == "sensor_msgs/CompressedImage") {
-			type = "Image";
-			sensor_msgs::CompressedImage::ConstPtr m = msg.instantiate<sensor_msgs::CompressedImage>();
-			// mImageMsgs[topic].append(QPair<uint64_t, QImage>(time, QImage::fromData(m->data.data(), m->data.size(), m->format.c_str())));
-			mImageMsgs[topic].append(QPair<uint64_t, sensor_msgs::CompressedImage::ConstPtr>(time, m));
+
+		mFloatMsgs[topic].append(QPair<uint64_t, float>(time, m->value));
+	}
+	else if (type == "chili_msgs/Int32"){
+		type = "Int";
+		chili_msgs::Int32::ConstPtr m = msg.instantiate<chili_msgs::Int32>();
+		if (!mUseRosTime) {
+			time = extractChiliMessageTime(m);
 		}
+
+		mIntMsgs[topic].append(QPair<uint64_t, int>(time, m->value));
+	}
+	else if (type == "chili_msgs/String"){
+		type = "String";
+		chili_msgs::String::ConstPtr m = msg.instantiate<chili_msgs::String>();
+		if (!mUseRosTime) {
+			time = extractChiliMessageTime(m);
+		}
+
+		mStringMsgs[topic].append(QPair<uint64_t, QString>(time, m->value.c_str()));
+	}
+	else if (type == "chili_msgs/Vector2Float32"){
+		type = "Vector2";
+		chili_msgs::Vector2Float32::ConstPtr m = msg.instantiate<chili_msgs::Vector2Float32>();
+		if (!mUseRosTime) {
+			time = extractChiliMessageTime(m);
+		}
+
+		mVector2Msgs[topic].append(QPair<uint64_t, QVector2D>(time, QVector2D(m->x, m->y)));
+	}
+	else if (type == "chili_msgs/Vector2Int32"){
+		type = "Vector2";
+		chili_msgs::Vector2Int32::ConstPtr m = msg.instantiate<chili_msgs::Vector2Int32>();
+		if (!mUseRosTime) {
+			time = extractChiliMessageTime(m);
+		}
+
+		mVector2Msgs[topic].append(QPair<uint64_t, QVector2D>(time, QVector2D(m->x, m->y)));
+	}
+	else if (type == "chili_msgs/Vector3Float32"){
+		type = "Vector3";
+		chili_msgs::Vector3Float32::ConstPtr m = msg.instantiate<chili_msgs::Vector3Float32>();
+		if (!mUseRosTime) {
+			time = extractChiliMessageTime(m);
+		}
+
+		mVector3Msgs[topic].append(QPair<uint64_t, QVector3D>(time, QVector3D(m->x, m->y, m->z)));
+	}
+	else if (type == "audio_common_msgs/AudioData") {
+		type = "Audio";
+		audio_common_msgs::AudioData::ConstPtr m = msg.instantiate<audio_common_msgs::AudioData>();
+
+		if (mAudioByteArrays.find(topic) == mAudioByteArrays.end()) {
+			mAudioByteArrays.insert(topic, QByteArray());
+		}
+
+		mAudioMsgs[topic].append(QPair<uint64_t, int>(time, mAudioByteArrays[topic].size()));
+		mAudioByteArrays[topic].append(QByteArray(reinterpret_cast<const char *>(m->data.data()), m->data.size()));
+	}
+	else if (type == "sensor_msgs/CompressedImage") {
+		type = "Image";
+		sensor_msgs::CompressedImage::ConstPtr m = msg.instantiate<sensor_msgs::CompressedImage>();
+		mImageMsgs[topic].append(QPair<uint64_t, sensor_msgs::CompressedImage::ConstPtr>(time, m));
+	}
+	else if (type == "std_msgs/Bool") {
+		type = "Bool";
+		std_msgs::Bool::ConstPtr m = msg.instantiate<std_msgs::Bool>();
+		mBoolMsgs[topic].append(QPair<uint64_t, bool>(time, m->data));
+	}
+	else if (type == "std_msgs/Int32") {
+		type = "Int";
+		std_msgs::Int32::ConstPtr m = msg.instantiate<std_msgs::Int32>();
+		mIntMsgs[topic].append(QPair<uint64_t, int>(time, m->data));
+	}
+	else if (type == "std_msgs/Float64") {
+		type = "Int";
+		std_msgs::Float64::ConstPtr m = msg.instantiate<std_msgs::Float64>();
+		mFloatMsgs[topic].append(QPair<uint64_t, float>(time, m->data));
+	}
+	else if (type == "std_msgs/String") {
+		type = "String";
+		std_msgs::String::ConstPtr m = msg.instantiate<std_msgs::String>();
+		mStringMsgs[topic].append(QPair<uint64_t, QString>(time, m->data.c_str()));
+	}
+	else if (type == "std_msgs/Int32MultiArray") {
+		type = "IntArray";
+		std_msgs::Int32MultiArray::ConstPtr m = msg.instantiate<std_msgs::Int32MultiArray>();
+		QList<QVariant> data;
+		for (auto value : m->data) {
+			data.append(value);
+		}
+		mIntArrayMsgs[topic].append(QPair<uint64_t, QList<QVariant>>(time, data));
+	}
+	else if (type == "std_msgs/Float64MultiArray") {
+		type = "DoubleArray";
+		std_msgs::Float64MultiArray::ConstPtr m = msg.instantiate<std_msgs::Float64MultiArray>();
+		QList<QVariant> data;
+		for (auto value : m->data) {
+			data.append(value);
+		}
+		mDoubleArrayMsgs[topic].append(QPair<uint64_t, QList<QVariant>>(time, data));
 	}
 
 	if (mTopics.find(topic) == mTopics.end()) {
