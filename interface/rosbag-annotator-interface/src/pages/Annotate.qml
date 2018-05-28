@@ -106,8 +106,8 @@ ScrollView {
 
 		Popup {
 			id: annotationPopup
-			x: 0.5 * (root.width - (annotationComboRow.implicitWidth + 64))
-			width: annotationComboRow.implicitWidth + 64
+			x: 0.5 * (root.width - 640)
+			width: 640
 			modal: true
 			focus: true
 			closePolicy: Popup.NoAutoClose
@@ -140,7 +140,6 @@ ScrollView {
 					            tmp.push(editText)
 					            model = tmp
 					        }
-					        console.log(annotationTopicComboBox.currentText.length)
 					    }
 
 						validator: RegExpValidator {
@@ -167,18 +166,36 @@ ScrollView {
 
 					Text {
 						Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-						text: "Value(s): "
+
+						text: {
+							if (annotationTypeComboBox.currentIndex == 0) {
+								return "Input either 0 or 1:"
+							}
+							else if (annotationTypeComboBox.currentIndex == 1) {
+								return "Input an integer:"
+							}
+							else if (annotationTypeComboBox.currentIndex == 2) {
+								return "Input a real number:"
+							}
+							else if (annotationTypeComboBox.currentIndex == 3) {
+								return "Input a text string:"
+							}
+							else if (annotationTypeComboBox.currentIndex == 4) {
+								return "Input a comma-separated list of integers:"
+							}
+							else if (annotationTypeComboBox.currentIndex == 5) {
+								return "Input a comma-separated list of real numbers:"
+							}
+						}
 						font.bold: true
 					}
 
 					TextInput {
-						Layout.preferredWidth: 320
+						Layout.preferredWidth: 160
 						Layout.margins: 8
 						Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
 
 						id: annotationValueInput
-
-						onTextEdited: console.log(annotationValueInput.length)
 
 						IntValidator {
 							id: boolValidator
@@ -369,9 +386,6 @@ ScrollView {
 		for (var i = 0; i < tmp.length; ++i) {
 			result.push(parseInt(tmp[i]))
 		}
-
-		console.log(str);
-		console.log(result);
 		return result;
 	}
 
@@ -381,9 +395,6 @@ ScrollView {
 		for (var i = 0; i < tmp.length; ++i) {
 			result.push(parseFloat(tmp[i]))
 		}
-
-		console.log(str);
-		console.log(result);
 		return result;
 	}
 }
