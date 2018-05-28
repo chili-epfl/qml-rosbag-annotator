@@ -47,7 +47,7 @@ public:
 	enum AnnotationType {
 		BOOL,
 		INT,
-		FLOAT,
+		DOUBLE,
 		STRING,
 		INT_ARRAY,
 		DOUBLE_ARRAY
@@ -246,7 +246,7 @@ private:
 	typedef sensor_msgs::CompressedImage::ConstPtr ImagePtr; 
 
 	QMap<QString, QList<QPair<uint64_t, bool>>::const_iterator> mCurrentBool;
-	QMap<QString, QList<QPair<uint64_t, float>>::const_iterator> mCurrentFloat;
+	QMap<QString, QList<QPair<uint64_t, double>>::const_iterator> mCurrentDouble;
 	QMap<QString, QList<QPair<uint64_t, int>>::const_iterator> mCurrentInt;
 	QMap<QString, QList<QPair<uint64_t, QString>>::const_iterator> mCurrentString;
 	QMap<QString, QList<QPair<uint64_t, QList<QVariant>>>::const_iterator> mCurrentIntArray;
@@ -255,7 +255,7 @@ private:
 	QMap<QString, QList<QPair<uint64_t, ImagePtr>>::const_iterator> mCurrentImage;
 
 	QMap<QString, QList<QPair<uint64_t, bool>>> mBoolMsgs;
-	QMap<QString, QList<QPair<uint64_t, float>>> mFloatMsgs;
+	QMap<QString, QList<QPair<uint64_t, double>>> mDoubleMsgs;
 	QMap<QString, QList<QPair<uint64_t, int>>> mIntMsgs;
 	QMap<QString, QList<QPair<uint64_t, QString>>> mStringMsgs;
 	QMap<QString, QList<QPair<uint64_t, QList<QVariant>>>> mIntArrayMsgs;

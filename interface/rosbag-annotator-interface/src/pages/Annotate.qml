@@ -328,7 +328,7 @@ ScrollView {
 							config.bagAnnotator.annotate(annotationTopicComboBox.currentText, parseInt(annotationValueInput.text), RosBagAnnotator.INT)
 						}
 						else if (annotationTypeComboBox.currentIndex == 2) {
-							config.bagAnnotator.annotate(annotationTopicComboBox.currentText, parseFloat(annotationValueInput.text), RosBagAnnotator.FLOAT)
+							config.bagAnnotator.annotate(annotationTopicComboBox.currentText, parseFloat(annotationValueInput.text), RosBagAnnotator.DOUBLE)
 						}
 						else if (annotationTypeComboBox.currentIndex == 3) {
 							config.bagAnnotator.annotate(annotationTopicComboBox.currentText, annotationValueInput.text, RosBagAnnotator.STRING)
@@ -370,7 +370,10 @@ ScrollView {
 
 				Text {
 					Layout.preferredWidth: 0.3 * root.width
-					text: valueToString(config.bagAnnotator.getCurrentValue(Object.keys(config.otherTopics)[index]))
+					text: valueToString(
+						config.bagAnnotator.getCurrentValue(Object.keys(config.otherTopics)[index]),
+						config.otherTopics[Object.keys(config.otherTopics)[index]]
+					)
 				}
 
 				Button {
@@ -403,37 +406,42 @@ ScrollView {
 		imageItem.setImage(config.bagAnnotator.getCurrentValue(config.imageTopic))
 
 		for (var i = 0; i < otherTopicsRepeater.count; ++i) {
-			otherTopicsRepeater.itemAt(i).children[1].text = valueToString(config.bagAnnotator.getCurrentValue(Object.keys(config.otherTopics)[i]))
+			otherTopicsRepeater.itemAt(i).children[1].text = valueToString(
+				config.bagAnnotator.getCurrentValue(Object.keys(config.otherTopics)[i]),
+				config.otherTopics[Object.keys(config.otherTopics)[i]]
+			)
 		}
 		
 		mapCanvas.requestPaint()
 	}
 
-	function valueToString(value) {
+	function valueToString(value, type) {
 		if (value === undefined) {
 			return "undefined"
 		}
 
-		if (value.length != undefined) {
+		if (type === "IntArray" || type === "DoubleArray") {
 			var str = "("
 			for (var i = 0; i < value.length; ++i) {
 				if (i > 0) {
 					str += ", "
 				}
 
-			    var er = /^-?[0-9]+$/;
-			    if (er.test(value[i])) {
+			    if (type === "IntArray") {
 			    	str += value[i]
 			    }
 				else {
-					str += value[i].toFixed(2)
+					str += value[i].toFixed(4)
 				}
 			}
 
 			return str + ")"
 		}
+		else if (type == "Double") {
+			return value.toFixed(4)
+		}
 		else {
-			return String(config.bagAnnotator.getCurrentValue(Object.keys(config.otherTopics)[index]))
+			return String(value)
 		}
 	}
 

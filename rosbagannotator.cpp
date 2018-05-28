@@ -76,7 +76,7 @@ void RosBagAnnotator::setCurrentTime(double time) {
 	}
 
 	seekCurrentMessageIndices(mBoolMsgs, mCurrentBool);
-	seekCurrentMessageIndices(mFloatMsgs, mCurrentFloat);
+	seekCurrentMessageIndices(mDoubleMsgs, mCurrentDouble);
 	seekCurrentMessageIndices(mIntMsgs, mCurrentInt);
 	seekCurrentMessageIndices(mStringMsgs, mCurrentString);
 	seekCurrentMessageIndices(mIntArrayMsgs, mCurrentIntArray);
@@ -104,8 +104,8 @@ double RosBagAnnotator::findPreviousTime(const QString &topic) {
 	if (type == "Bool") {
 		prevTime = previousMessageTime(mBoolMsgs[topic], mCurrentBool[topic]);
 	}
-	else if (type == "Float") {
-		prevTime = previousMessageTime(mFloatMsgs[topic], mCurrentFloat[topic]);
+	else if (type == "Double") {
+		prevTime = previousMessageTime(mDoubleMsgs[topic], mCurrentDouble[topic]);
 	}
 	else if (type == "Int") {
 		prevTime = previousMessageTime(mIntMsgs[topic], mCurrentInt[topic]);
@@ -138,8 +138,8 @@ double RosBagAnnotator::findNextTime(const QString &topic) {
 	if (type == "Bool") {
 		nextTime = nextMessageTime(mBoolMsgs[topic], mCurrentBool[topic]);
 	}
-	else if (type == "Float") {
-		nextTime = nextMessageTime(mFloatMsgs[topic], mCurrentFloat[topic]);
+	else if (type == "Double") {
+		nextTime = nextMessageTime(mDoubleMsgs[topic], mCurrentDouble[topic]);
 	}
 	else if (type == "Int") {
 		nextTime = nextMessageTime(mIntMsgs[topic], mCurrentInt[topic]);
@@ -182,9 +182,9 @@ QVariant RosBagAnnotator::getCurrentValue(const QString &topic) {
 			value = it->second;
 		}
 	}
-	else if (type == "Float") {
-		auto it = mCurrentFloat[topic];
-		if (it >= mFloatMsgs[topic].begin()) {
+	else if (type == "Double") {
+		auto it = mCurrentDouble[topic];
+		if (it >= mDoubleMsgs[topic].begin()) {
 			value = it->second;
 		}
 	}
@@ -273,7 +273,7 @@ void RosBagAnnotator::annotate(const QString &topic, const QVariant &value, cons
 		msg.data = value.toInt();
 		publishAnnotation(topic, type, msg);
 	}
-	else if (type == FLOAT) {
+	else if (type == DOUBLE) {
 		std_msgs::Float64 msg;
 		msg.data = value.toDouble();
 		publishAnnotation(topic, type, msg);
@@ -328,7 +328,7 @@ void RosBagAnnotator::reset() {
 	mTopicsByType.clear();
 
 	mCurrentBool.clear();
-	mCurrentFloat.clear();
+	mCurrentDouble.clear();
 	mCurrentInt.clear();
 	mCurrentString.clear();
 	mCurrentIntArray.clear();
@@ -337,7 +337,7 @@ void RosBagAnnotator::reset() {
 	mCurrentImage.clear();
 
 	mBoolMsgs.clear();
-	mFloatMsgs.clear();
+	mDoubleMsgs.clear();
 	mIntMsgs.clear();
 	mStringMsgs.clear();
 	mIntArrayMsgs.clear();
@@ -372,7 +372,7 @@ void RosBagAnnotator::parseBag() {
 	mCurrentTime = mStartTime;
 
 	sortMessages(mBoolMsgs);
-	sortMessages(mFloatMsgs);
+	sortMessages(mDoubleMsgs);
 	sortMessages(mIntMsgs);
 	sortMessages(mStringMsgs);
 	sortMessages(mIntArrayMsgs);
@@ -403,13 +403,13 @@ void RosBagAnnotator::extractMessage(const rosbag::MessageInstance &msg) {
 		mBoolMsgs[topic].append(QPair<uint64_t, bool>(time, m->value));
 	}
 	else if (type == "chili_msgs/Float32") {
-		type = "Float";
+		type = "Double";
 		chili_msgs::Float32::ConstPtr m = msg.instantiate<chili_msgs::Float32>();
 		if (!mUseRosTime) {
 			time = extractChiliMessageTime(m);
 		}
 
-		mFloatMsgs[topic].append(QPair<uint64_t, float>(time, m->value));
+		mDoubleMsgs[topic].append(QPair<uint64_t, float>(time, m->value));
 	}
 	else if (type == "chili_msgs/Int32"){
 		type = "Int";
@@ -489,7 +489,7 @@ void RosBagAnnotator::extractMessage(const rosbag::MessageInstance &msg) {
 	else if (type == "std_msgs/Float64") {
 		type = "Int";
 		std_msgs::Float64::ConstPtr m = msg.instantiate<std_msgs::Float64>();
-		mFloatMsgs[topic].append(QPair<uint64_t, float>(time, m->data));
+		mDoubleMsgs[topic].append(QPair<uint64_t, float>(time, m->data));
 	}
 	else if (type == "std_msgs/String") {
 		type = "String";
