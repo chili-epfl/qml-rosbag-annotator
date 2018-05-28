@@ -1,4 +1,4 @@
-import QtQuick 2.7
+import QtQuick 2.11
 import QtQuick.Window 2.2
 import QtQuick.Controls 2.3
 import QtQml.Models 2.2
@@ -135,11 +135,12 @@ ScrollView {
 						model: bagAnnotator != undefined ? Object.keys(bagAnnotator.annotationTopics) : 0
 
 					    onAccepted: {
-					        if (bagAnnotator.annotationTopics.editText === undefined) {
+					        if (bagAnnotator.annotationTopics[editText] === undefined) {
 					        	var tmp = Object.keys(bagAnnotator.annotationTopics)
 					            tmp.push(editText)
 					            model = tmp
 					        }
+					        console.log(annotationTopicComboBox.currentText.length)
 					    }
 
 						validator: RegExpValidator {
@@ -155,6 +156,7 @@ ScrollView {
 					ComboBox {
 						id: annotationTypeComboBox
 						model: ["Bool", "Int", "Real", "String", "Array of Int", "Array of Real"]
+						onActivated: annotationValueInput.text = ""
 					}
 				}
 
@@ -169,67 +171,60 @@ ScrollView {
 						font.bold: true
 					}
 
-					// Rectangle {
-					// 	Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
-					// 	Layout.preferredWidth: annotationValueInput.preferredWidth + 4
-					// 	Layout.preferredHeight: annotationValueInput.preferredHeight + 4
-					// 	color: "#00000000"
-					// 	border.width: 1
-					// 	border.color: "#111111"
+					TextInput {
+						Layout.preferredWidth: 320
+						Layout.margins: 8
+						Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
 
-						TextInput {
-							Layout.preferredWidth: 320
-							Layout.margins: 8
-							Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
+						id: annotationValueInput
 
-							id: annotationValueInput
+						onTextEdited: console.log(annotationValueInput.length)
 
-							IntValidator {
-								id: boolValidator
-								bottom: 0
-								top: 1
-							}
-							IntValidator {
-								id: intValidator
-							}
-							DoubleValidator {
-								id: realValidator
-							}
-							RegExpValidator {
-								id: stringValidator
-								regExp: /.*$/
-							}
-							RegExpValidator {
-								id: intArrayValidator
-								regExp: /\d{1,12}(?: *, *\d{1,12})+ *$/
-							}
-							RegExpValidator {
-								id: realArrayValidator
-								regExp: /(\d{1,12}(?:\.\d{1,12})?)(?: *, *(\d{1,12}(?:\.\d{1,12})?))+ *$/
-							}
+						IntValidator {
+							id: boolValidator
+							bottom: 0
+							top: 1
+						}
+						IntValidator {
+							id: intValidator
+						}
+						DoubleValidator {
+							id: realValidator
+						}
+						RegExpValidator {
+							id: stringValidator
+							regExp: /.*$/
+						}
+						RegExpValidator {
+							id: intArrayValidator
+							regExp: /\d{1,12}(?: *, *\d{1,12})+ *$/
+						}
+						RegExpValidator {
+							id: realArrayValidator
+							regExp: /(\d{1,12}(?:\.\d{1,12})?)(?: *, *(\d{1,12}(?:\.\d{1,12})?))+ *$/
+						}
 
-							validator: {
-								if (annotationTypeComboBox.currentIndex == 0) {
-									return boolValidator
-								}
-								else if (annotationTypeComboBox.currentIndex == 1) {
-									return intValidator
-								}
-								else if (annotationTypeComboBox.currentIndex == 2) {
-									return realValidator
-								}
-								else if (annotationTypeComboBox.currentIndex == 3) {
-									return stringValidator
-								}
-								else if (annotationTypeComboBox.currentIndex == 4) {
-									return intArrayValidator
-								}
-								else if (annotationTypeComboBox.currentIndex == 5) {
-									return realArrayValidator
-								}
+						validator: {
+							if (annotationTypeComboBox.currentIndex == 0) {
+								return boolValidator
+							}
+							else if (annotationTypeComboBox.currentIndex == 1) {
+								return intValidator
+							}
+							else if (annotationTypeComboBox.currentIndex == 2) {
+								return realValidator
+							}
+							else if (annotationTypeComboBox.currentIndex == 3) {
+								return stringValidator
+							}
+							else if (annotationTypeComboBox.currentIndex == 4) {
+								return intArrayValidator
+							}
+							else if (annotationTypeComboBox.currentIndex == 5) {
+								return realArrayValidator
 							}
 						}
-					// }
+					}
 				}
 
 				Button {

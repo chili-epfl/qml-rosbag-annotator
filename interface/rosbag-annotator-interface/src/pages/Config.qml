@@ -1,4 +1,4 @@
-import QtQuick 2.7
+import QtQuick 2.11
 import QtQuick.Window 2.2
 import QtQuick.Controls 2.3
 import QtQml.Models 2.2
@@ -196,16 +196,16 @@ ScrollView {
 
 			Text {
 				id: typeText
-				Layout.preferredWidth: 0.25 * root.width
+				Layout.preferredWidth: 0.15 * root.width
 				text: "Type"
 				font.bold: true
 			}
 
 			Text {
-				Layout.preferredWidth: 0.1 * root.width
-				Layout.alignment: Qt.AlignHCenter | At.AlignVCenter
+				Layout.preferredWidth: 0.2 * root.width
+				Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
 				id: displayText
-				text: "Show?"
+				text: "Show during annotation?"
 				font.bold: true
 			}
 		}
@@ -225,13 +225,13 @@ ScrollView {
 				}
 
 				Text {
-					Layout.preferredWidth: 0.25 * root.width
+					Layout.preferredWidth: 0.15 * root.width
 					text: selectableTopics[Object.keys(selectableTopics)[index]]
 				}
 
 				CheckBox {
-					Layout.preferredWidth: 0.1 * root.width
-					Layout.alignment: Qt.AlignHCenter | At.AlignVCenter
+					Layout.preferredWidth: 0.2 * root.width
+					Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
 				}
 			}
 		}
