@@ -135,7 +135,7 @@ double RosBagAnnotator::findPreviousTime(const QString &topic) {
 		prevTime = previousMessageTime(mImageMsgs[topic], mCurrentImage[topic]);
 	}
 
-	return std::max(1e-9 * (prevTime - mStartTime) - 1e-6, 0.0);
+	return std::max(1e-9 * (prevTime - mStartTime), 0.0);
 }
 
 double RosBagAnnotator::findNextTime(const QString &topic) {
@@ -175,7 +175,7 @@ double RosBagAnnotator::findNextTime(const QString &topic) {
 		nextTime = nextMessageTime(mImageMsgs[topic], mCurrentImage[topic]);
 	}
 
-	return std::min(1e-9 * (nextTime - mStartTime) + 1e-6, 1e-9 * (mEndTime - mStartTime));
+	return std::min(1e-9 * (nextTime - mStartTime), 1e-9 * (mEndTime - mStartTime));
 }
 
 QVariant RosBagAnnotator::getCurrentValue(const QString &topic) {
