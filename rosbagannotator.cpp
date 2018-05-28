@@ -16,8 +16,8 @@
 #include <chili_msgs/Int32.h>
 #include <chili_msgs/String.h>
 #include <chili_msgs/Vector2Float32.h>
-#include <chili_msgs/Vector3Float32.h>
 #include <chili_msgs/Vector2Int32.h>
+#include <chili_msgs/Vector3Float32.h>
 
 #include <algorithm>
 #include <limits>
@@ -45,7 +45,6 @@ RosBagAnnotator::~RosBagAnnotator()
 
 void RosBagAnnotator::setBagPath(QString path) {
 	mBagPath = path;
-	emit bagPathChanged(mBagPath);
 
 	reset();
 
@@ -60,10 +59,10 @@ void RosBagAnnotator::setBagPath(QString path) {
 
 		parseBag();
 		
-		qDebug() << "mTopics.count() after parsing:" << mTopics.count();
-
 		mBag->close();
 	}
+
+	emit bagPathChanged(mBagPath);
 }
 
 void RosBagAnnotator::setCurrentTime(double time) {
@@ -80,8 +79,6 @@ void RosBagAnnotator::setCurrentTime(double time) {
 	seekCurrentMessageIndices(mFloatMsgs, mCurrentFloat);
 	seekCurrentMessageIndices(mIntMsgs, mCurrentInt);
 	seekCurrentMessageIndices(mStringMsgs, mCurrentString);
-	seekCurrentMessageIndices(mVector2Msgs, mCurrentVector2);
-	seekCurrentMessageIndices(mVector3Msgs, mCurrentVector3);
 	seekCurrentMessageIndices(mIntArrayMsgs, mCurrentIntArray);
 	seekCurrentMessageIndices(mDoubleArrayMsgs, mCurrentDoubleArray);
 	seekCurrentMessageIndices(mAudioMsgs, mCurrentAudio);
@@ -116,12 +113,6 @@ double RosBagAnnotator::findPreviousTime(const QString &topic) {
 	else if (type == "String") {
 		prevTime = previousMessageTime(mStringMsgs[topic], mCurrentString[topic]);
 	}
-	else if (type == "Vector2") {
-		prevTime = previousMessageTime(mVector2Msgs[topic], mCurrentVector2[topic]);
-	}
-	else if (type == "Vector3") {
-		prevTime = previousMessageTime(mVector3Msgs[topic], mCurrentVector3[topic]);
-	}
 	else if (type == "IntArray") {
 		prevTime = previousMessageTime(mIntArrayMsgs[topic], mCurrentIntArray[topic]);
 	}
@@ -155,12 +146,6 @@ double RosBagAnnotator::findNextTime(const QString &topic) {
 	}
 	else if (type == "String") {
 		nextTime = nextMessageTime(mStringMsgs[topic], mCurrentString[topic]);
-	}
-	else if (type == "Vector2") {
-		nextTime = nextMessageTime(mVector2Msgs[topic], mCurrentVector2[topic]);
-	}
-	else if (type == "Vector3") {
-		nextTime = nextMessageTime(mVector3Msgs[topic], mCurrentVector3[topic]);
 	}
 	else if (type == "IntArray") {
 		nextTime = nextMessageTime(mIntArrayMsgs[topic], mCurrentIntArray[topic]);
@@ -215,18 +200,6 @@ QVariant RosBagAnnotator::getCurrentValue(const QString &topic) {
 			value = it->second;
 		}
 	}
-	else if (type == "Vector2") {
-		auto it = mCurrentVector2[topic];
-		if (it >= mVector2Msgs[topic].begin()) {
-			value = it->second;
-		}
-	}
-	else if (type == "Vector3") {
-		auto it = mCurrentVector3[topic];
-		if (it >= mVector3Msgs[topic].begin()) {
-			value = it->second;
-		}
-	}
 	else if (type == "IntArray") {
 		auto it = mCurrentIntArray[topic];
 		if (it >= mIntArrayMsgs[topic].begin()) {
@@ -265,7 +238,7 @@ void RosBagAnnotator::play(double frequency, const QString &audioTopic) {
 
 	mPlaybackStartTime = mCurrentTime;
 	mAudioTopic = audioTopic;
-	
+
 	mPlaybackTimer.setTimerType(Qt::PreciseTimer);
 	mPlaybackTimer.setInterval(1e3 / frequency);
 
@@ -280,7 +253,9 @@ void RosBagAnnotator::stop() {
 
 	mMediaPlayer.stop();
 	mMediaPlayer.setMedia(QMediaContent());
-	mAudioBuffer.close();
+	if (mAudioBuffer.isOpen()) {
+		mAudioBuffer.close();
+	}
 
 	emit playingChanged(false);
 }
@@ -345,6 +320,8 @@ void RosBagAnnotator::updatePlayback() {
 }
 
 void RosBagAnnotator::reset() {
+	stop();
+
 	mStartTime = mEndTime = mCurrentTime = 0;
 
 	mTopics.clear();
@@ -354,8 +331,6 @@ void RosBagAnnotator::reset() {
 	mCurrentFloat.clear();
 	mCurrentInt.clear();
 	mCurrentString.clear();
-	mCurrentVector2.clear();
-	mCurrentVector3.clear();
 	mCurrentIntArray.clear();
 	mCurrentDoubleArray.clear();
 	mCurrentAudio.clear();
@@ -365,8 +340,6 @@ void RosBagAnnotator::reset() {
 	mFloatMsgs.clear();
 	mIntMsgs.clear();
 	mStringMsgs.clear();
-	mVector2Msgs.clear();
-	mVector3Msgs.clear();
 	mIntArrayMsgs.clear();
 	mDoubleArrayMsgs.clear();
 	mAudioMsgs.clear();
@@ -380,8 +353,6 @@ void RosBagAnnotator::reset() {
 	emit topicsChanged(mTopics);
 	emit topicsByTypeChanged(mTopicsByType);
 	emit currentTimeChanged(0.0);
-
-	qDebug() << "mTopics.count() after reset:" << mTopics.count();
 }
 
 void RosBagAnnotator::parseBag() {
@@ -404,8 +375,8 @@ void RosBagAnnotator::parseBag() {
 	sortMessages(mFloatMsgs);
 	sortMessages(mIntMsgs);
 	sortMessages(mStringMsgs);
-	sortMessages(mVector2Msgs);
-	sortMessages(mVector3Msgs);
+	sortMessages(mIntArrayMsgs);
+	sortMessages(mDoubleArrayMsgs);
 
 	emit lengthChanged(length());
 	emit topicsChanged(mTopics);
@@ -459,31 +430,35 @@ void RosBagAnnotator::extractMessage(const rosbag::MessageInstance &msg) {
 		mStringMsgs[topic].append(QPair<uint64_t, QString>(time, m->value.c_str()));
 	}
 	else if (type == "chili_msgs/Vector2Float32"){
-		type = "Vector2";
+		type = "DoubleArray";
 		chili_msgs::Vector2Float32::ConstPtr m = msg.instantiate<chili_msgs::Vector2Float32>();
 		if (!mUseRosTime) {
 			time = extractChiliMessageTime(m);
 		}
 
-		mVector2Msgs[topic].append(QPair<uint64_t, QVector2D>(time, QVector2D(m->x, m->y)));
+		QList<QVariant> data{m->x, m->y};
+		mDoubleArrayMsgs[topic].append(QPair<uint64_t, QList<QVariant>>(time, data));
 	}
 	else if (type == "chili_msgs/Vector2Int32"){
-		type = "Vector2";
+		type = "IntArray";
 		chili_msgs::Vector2Int32::ConstPtr m = msg.instantiate<chili_msgs::Vector2Int32>();
 		if (!mUseRosTime) {
 			time = extractChiliMessageTime(m);
 		}
 
-		mVector2Msgs[topic].append(QPair<uint64_t, QVector2D>(time, QVector2D(m->x, m->y)));
+
+		QList<QVariant> data{m->x, m->y};
+		mIntArrayMsgs[topic].append(QPair<uint64_t, QList<QVariant>>(time, data));
 	}
 	else if (type == "chili_msgs/Vector3Float32"){
-		type = "Vector3";
+		type = "DoubleArray";
 		chili_msgs::Vector3Float32::ConstPtr m = msg.instantiate<chili_msgs::Vector3Float32>();
 		if (!mUseRosTime) {
 			time = extractChiliMessageTime(m);
 		}
 
-		mVector3Msgs[topic].append(QPair<uint64_t, QVector3D>(time, QVector3D(m->x, m->y, m->z)));
+		QList<QVariant> data{m->x, m->y, m->z};
+		mDoubleArrayMsgs[topic].append(QPair<uint64_t, QList<QVariant>>(time, data));
 	}
 	else if (type == "audio_common_msgs/AudioData") {
 		type = "Audio";

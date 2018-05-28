@@ -249,8 +249,6 @@ private:
 	QMap<QString, QList<QPair<uint64_t, float>>::const_iterator> mCurrentFloat;
 	QMap<QString, QList<QPair<uint64_t, int>>::const_iterator> mCurrentInt;
 	QMap<QString, QList<QPair<uint64_t, QString>>::const_iterator> mCurrentString;
-	QMap<QString, QList<QPair<uint64_t, QVector2D>>::const_iterator> mCurrentVector2;
-	QMap<QString, QList<QPair<uint64_t, QVector3D>>::const_iterator> mCurrentVector3;
 	QMap<QString, QList<QPair<uint64_t, QList<QVariant>>>::const_iterator> mCurrentIntArray;
 	QMap<QString, QList<QPair<uint64_t, QList<QVariant>>>::const_iterator> mCurrentDoubleArray;
 	QMap<QString, QList<QPair<uint64_t, int>>::const_iterator> mCurrentAudio;
@@ -260,8 +258,6 @@ private:
 	QMap<QString, QList<QPair<uint64_t, float>>> mFloatMsgs;
 	QMap<QString, QList<QPair<uint64_t, int>>> mIntMsgs;
 	QMap<QString, QList<QPair<uint64_t, QString>>> mStringMsgs;
-	QMap<QString, QList<QPair<uint64_t, QVector2D>>> mVector2Msgs;
-	QMap<QString, QList<QPair<uint64_t, QVector3D>>> mVector3Msgs;
 	QMap<QString, QList<QPair<uint64_t, QList<QVariant>>>> mIntArrayMsgs;
 	QMap<QString, QList<QPair<uint64_t, QList<QVariant>>>> mDoubleArrayMsgs;
 	QMap<QString, QList<QPair<uint64_t, int>>> mAudioMsgs;

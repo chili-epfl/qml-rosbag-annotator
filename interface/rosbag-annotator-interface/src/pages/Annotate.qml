@@ -12,30 +12,72 @@ ScrollView {
 	anchors.fill: parent
 
 	property var title: qsTr("Annotate")
-	property var bagAnnotator
-	property var imageTopic
-	property var audioTopic
-	property var otherTopics: new Object({})
+	property var config
 	property real playbackFreq: 30.0
+
+	TabBar {
+	    id: imageTabBar
+	    anchors.horizontalCenter: parent.horizontalCenter
+	    anchors.top: parent.top
+		anchors.topMargin: 16
+		width: 640
+	    TabButton {
+	        text: qsTr("Video Topic")
+	    }
+	    TabButton {
+	        text: qsTr("Map")
+	    }
+	}
+
+	StackLayout {
+		id: imageStack
+	    anchors.horizontalCenter: parent.horizontalCenter
+	    anchors.top: imageTabBar.bottom
+		anchors.topMargin: 8
+		width: 640
+		height: 480
+	    currentIndex: imageTabBar.currentIndex
+
+		ImageItem {
+			id: imageItem
+			Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+			width: 640
+			height: 480
+		}
+	    Canvas {
+	        id: mapCanvas
+			Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+			width: 640
+			height: 480
+
+			onImageLoaded: {
+				draw()
+			}
+
+			onPaint: {
+				if (config != undefined && mapCanvas.isImageLoaded(config.mapImageUrl)) {
+					draw()
+				}
+			}
+
+			function draw() {
+				var ctx = mapCanvas.getContext('2d')
+				ctx.drawImage(config.mapImageUrl, 0, 0, 640, 480)
+			}
+	    }
+	}
 
 	ColumnLayout {
 		id: topLayout
 		anchors.horizontalCenter: parent.horizontalCenter
-		anchors.top: parent.top
+		anchors.top: imageStack.bottom
 		anchors.topMargin: 8
 		width: 0.9 * parent.width
 		spacing: 16
 
-		ImageItem {
-			id: imageItem
-			Layout.preferredWidth: imageItem.dims.x ? imageItem.dims.x : 640
-			Layout.preferredHeight: imageItem.dims.y ? imageItem.dims.y : 480
-			Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
-		}
-
 		Text {
 			Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
-			text: bagAnnotator != undefined ? "Current time: " + bagAnnotator.currentTime.toFixed(2) : ""
+			text: config != undefined ? "Current time: " + config.bagAnnotator.currentTime.toFixed(2) : ""
 		}
 
 		Rectangle {
@@ -52,7 +94,7 @@ ScrollView {
 				anchors.top: parent.top
 				anchors.bottom: parent.bottom
 
-				width: bagAnnotator != undefined ? parent.width * bagAnnotator.currentTime / bagAnnotator.length : 0
+				width: config != undefined ? parent.width * config.bagAnnotator.currentTime / config.bagAnnotator.length : 0
 
 				color: "darkGray"
 			}
@@ -60,7 +102,7 @@ ScrollView {
 			MouseArea {
 				anchors.fill: parent
 				onClicked: {
-					seek(bagAnnotator.length * mouse.x / width);
+					seek(config.bagAnnotator.length * mouse.x / width);
 				}
 			}
 		}
@@ -77,14 +119,14 @@ ScrollView {
 
 			Button {
 				text: "Previous frame"
-				onClicked: previous(imageTopic)
+				onClicked: previous(config.imageTopic)
 			}
 
 			Button {
 				id: playPauseButton
 				text: "Play"
 				onClicked: {
-					if (bagAnnotator.playing) {
+					if (config.bagAnnotator.playing) {
 						pause()
 					}
 					else {
@@ -95,7 +137,7 @@ ScrollView {
 
 			Button {
 				text: "Next frame"
-				onClicked: next(imageTopic)
+				onClicked: next(config.imageTopic)
 			}
 
 			Button {
@@ -131,11 +173,11 @@ ScrollView {
 					ComboBox {
 						id: annotationTopicComboBox
 						editable: true
-						model: bagAnnotator != undefined ? Object.keys(bagAnnotator.annotationTopics) : 0
+						model: config != undefined ? Object.keys(config.bagAnnotator.annotationTopics) : 0
 
 					    onAccepted: {
-					        if (bagAnnotator.annotationTopics[editText] === undefined) {
-					        	var tmp = Object.keys(bagAnnotator.annotationTopics)
+					        if (config.bagAnnotator.annotationTopics[editText] === undefined) {
+					        	var tmp = Object.keys(config.bagAnnotator.annotationTopics)
 					            tmp.push(editText)
 					            model = tmp
 					        }
@@ -250,22 +292,22 @@ ScrollView {
 					enabled: annotationValueInput.length > 0 && annotationTopicComboBox.currentText.length > 0
 					onClicked: {
 						if (annotationTypeComboBox.currentIndex == 0) {
-							bagAnnotator.annotate(annotationTopicComboBox.currentText, Boolean(parseInt(annotationValueInput.text)), RosBagAnnotator.BOOL)
+							config.bagAnnotator.annotate(annotationTopicComboBox.currentText, Boolean(parseInt(annotationValueInput.text)), RosBagAnnotator.BOOL)
 						}
 						else if (annotationTypeComboBox.currentIndex == 1) {
-							bagAnnotator.annotate(annotationTopicComboBox.currentText, parseInt(annotationValueInput.text), RosBagAnnotator.INT)
+							config.bagAnnotator.annotate(annotationTopicComboBox.currentText, parseInt(annotationValueInput.text), RosBagAnnotator.INT)
 						}
 						else if (annotationTypeComboBox.currentIndex == 2) {
-							bagAnnotator.annotate(annotationTopicComboBox.currentText, parseFloat(annotationValueInput.text), RosBagAnnotator.FLOAT)
+							config.bagAnnotator.annotate(annotationTopicComboBox.currentText, parseFloat(annotationValueInput.text), RosBagAnnotator.FLOAT)
 						}
 						else if (annotationTypeComboBox.currentIndex == 3) {
-							bagAnnotator.annotate(annotationTopicComboBox.currentText, annotationValueInput.text, RosBagAnnotator.STRING)
+							config.bagAnnotator.annotate(annotationTopicComboBox.currentText, annotationValueInput.text, RosBagAnnotator.STRING)
 						}
 						else if (annotationTypeComboBox.currentIndex == 4) {
-							bagAnnotator.annotate(annotationTopicComboBox.currentText, parseIntArray(annotationValueInput.text), RosBagAnnotator.INT_ARRAY)
+							config.bagAnnotator.annotate(annotationTopicComboBox.currentText, parseIntArray(annotationValueInput.text), RosBagAnnotator.INT_ARRAY)
 						}
 						else if (annotationTypeComboBox.currentIndex == 5) {
-							bagAnnotator.annotate(annotationTopicComboBox.currentText, parseFloatArray(annotationValueInput.text), RosBagAnnotator.DOUBLE_ARRAY)
+							config.bagAnnotator.annotate(annotationTopicComboBox.currentText, parseFloatArray(annotationValueInput.text), RosBagAnnotator.DOUBLE_ARRAY)
 						}
 
 						annotationPopup.close()
@@ -284,7 +326,7 @@ ScrollView {
 
 		Repeater {
 			id: otherTopicsRepeater
-			model: Object.keys(otherTopics).length
+			model: config != undefined ? Object.keys(config.otherTopics).length : 0
 
 			RowLayout {
 				Layout.fillWidth: true
@@ -293,48 +335,46 @@ ScrollView {
 
 				Text {
 					Layout.preferredWidth: 0.4 * root.width
-					text: Object.keys(otherTopics)[index]
+					text: Object.keys(config.otherTopics)[index]
 				}
 
 				Text {
 					Layout.preferredWidth: 0.2 * root.width
-					text: String(bagAnnotator.getCurrentValue(Object.keys(otherTopics)[index]))
+					text: String(config.bagAnnotator.getCurrentValue(Object.keys(config.otherTopics)[index]))
 				}
 
 				Button {
 					text: "Previous"
-					onClicked: previous(Object.keys(otherTopics)[index])
+					onClicked: previous(Object.keys(config.otherTopics)[index])
 				}
 
 				Button {
 					text: "Next"
-					onClicked: next(Object.keys(otherTopics)[index])
+					onClicked: next(Object.keys(config.otherTopics)[index])
 				}
 			}
 		}
 	}
 
-	function load(config) {
-		bagAnnotator = config.bagAnnotator
-		imageTopic = config.imageTopic
-		audioTopic = config.audioTopic
-		otherTopics = config.otherTopics
+	function load(configuration) {
+		config = configuration
+		config.bagAnnotator.setUseSeparateBag(config.useSeparateBag)
 
-		bagAnnotator.setUseSeparateBag(config.useSeparateBag)
-
-		next(imageTopic)
+		next(config.imageTopic)
 		updateValues()
 
-		bagAnnotator.onCurrentTimeChanged.connect(updateValues)
-		bagAnnotator.onPlayingChanged.connect(updatePlayPauseButtonState)
+		config.bagAnnotator.onCurrentTimeChanged.connect(updateValues)
+		config.bagAnnotator.onPlayingChanged.connect(updatePlayPauseButtonState)
 	}
 
 	function updateValues(time){
-		imageItem.setImage(bagAnnotator.getCurrentValue(imageTopic))
+		imageItem.setImage(config.bagAnnotator.getCurrentValue(config.imageTopic))
 
 		for (var i = 0; i < otherTopicsRepeater.count; ++i) {
-			otherTopicsRepeater.itemAt(i).children[1].text = String(bagAnnotator.getCurrentValue(Object.keys(otherTopics)[i]))
+			otherTopicsRepeater.itemAt(i).children[1].text = String(config.bagAnnotator.getCurrentValue(Object.keys(config.otherTopics)[i]))
 		}
+		
+		mapCanvas.loadImage(config.mapImageUrl)
 	}
 
 	function updatePlayPauseButtonState(playing){
@@ -347,37 +387,37 @@ ScrollView {
 	}
 
 	function play() {
-		bagAnnotator.play(playbackFreq, audioTopic)
+		config.bagAnnotator.play(playbackFreq, config.audioTopic)
 	}
 
 	function pause() {
-		bagAnnotator.stop()
+		config.bagAnnotator.stop()
 	}
 
 	function previous(topic) {
-		var prevTime = bagAnnotator.findPreviousTime(topic);
+		var prevTime = config.bagAnnotator.findPreviousTime(topic);
 		seek(prevTime)
 	}
 
 	function next(topic) {
-		var nextTime = bagAnnotator.findNextTime(topic);
+		var nextTime = config.bagAnnotator.findNextTime(topic);
 		seek(nextTime)
 	}
 
 	function seek(position) {
-		if (position == bagAnnotator.currentTime) {
+		if (position == config.bagAnnotator.currentTime) {
 			return;
 		}
 
-		var playing = bagAnnotator.playing
+		var playing = config.bagAnnotator.playing
 		if (playing) {
-			bagAnnotator.stop()
+			config.bagAnnotator.stop()
 		}
 
-		bagAnnotator.setCurrentTime(position)
+		config.bagAnnotator.setCurrentTime(position)
 
 		if (playing) {
-			bagAnnotator.play(playbackFreq, audioTopic)
+			config.bagAnnotator.play(playbackFreq, config.audioTopic)
 		}
 	}
 

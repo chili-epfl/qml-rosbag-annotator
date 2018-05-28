@@ -17,7 +17,11 @@ ScrollView {
 	property var imageTopic
 	property var audioTopic
 	property var otherTopics: new Object({})
+	property var mapTopics: new Object({})
 	property var selectableTopics: new Object({})
+	property var mapImageUrl
+	property var mapWidth
+	property var mapHeight
 
 	ColumnLayout {
 		anchors.horizontalCenter: parent.horizontalCenter
@@ -78,6 +82,15 @@ ScrollView {
 			columns: 2
 			columnSpacing: 8
 			rowSpacing: 4
+
+			Rectangle {
+				Layout.preferredWidth: 0.9 * root.width
+				Layout.preferredHeight: 1
+				Layout.columnSpan: 2
+				Layout.bottomMargin: 8
+				Layout.topMargin: 8
+				color: "#111111"
+			}
 
 			Text {
 				Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
@@ -171,6 +184,68 @@ ScrollView {
 				Layout.topMargin: 8
 				color: "#111111"
 			}
+
+			FileDialog {
+				id: mapFileDialog
+
+				title: "Optionally, choose a map image file"
+				modality: Qt.WindowModal
+				selectMultiple: false
+
+				nameFilters: [ "Image files (*.jpg *.png *.svg)" ]
+
+				onAccepted: mapImage.source = mapFileDialog.fileUrl
+			}
+
+			Text {
+				Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+				text: "Map image file (optional):"
+			}
+
+			Button {
+				text: "Choose file"
+				onClicked: mapFileDialog.open()
+			}
+
+			Text {
+				Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+				text: "Map width (in mm):"
+			}
+
+			TextInput {
+				id: mapWidthInput
+				text: "100"
+				validator: IntValidator{bottom: 0}
+			}
+
+			Text {
+				Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+				text: "Map height (in mm):"
+			}
+
+			TextInput {
+				id: mapHeightInput
+				text: "100"
+				validator: IntValidator{bottom: 0}
+			}
+
+			Image {
+				id: mapImage
+				Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+				Layout.maximumWidth: 0.4 * root.width
+				Layout.maximumHeight: 0.4 * root.width
+				Layout.columnSpan: 2
+				fillMode: Image.PreserveAspectFit
+			}
+
+			Rectangle {
+				Layout.preferredWidth: 0.9 * root.width
+				Layout.preferredHeight: 1
+				Layout.columnSpan: 2
+				Layout.bottomMargin: 8
+				Layout.topMargin: 8
+				color: "#111111"
+			}
 		}
 
 		RowLayout {
@@ -198,7 +273,7 @@ ScrollView {
 
 			Text {
 				id: nameText
-				Layout.preferredWidth: 0.45 * root.width
+				Layout.preferredWidth: 0.35 * root.width
 				text: "Name"
 				font.bold: true
 			}
@@ -211,10 +286,18 @@ ScrollView {
 			}
 
 			Text {
-				Layout.preferredWidth: 0.2 * root.width
+				Layout.preferredWidth: 0.15 * root.width
 				Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
 				id: displayText
 				text: "Show during annotation?"
+				font.bold: true
+			}
+
+			Text {
+				Layout.preferredWidth: 0.15 * root.width
+				Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+				id: mapDisplayText
+				text: "Show on map?"
 				font.bold: true
 			}
 		}
@@ -229,7 +312,7 @@ ScrollView {
 				spacing: 4
 
 				Text {
-					Layout.preferredWidth: 0.45 * root.width
+					Layout.preferredWidth: 0.35 * root.width
 					text: Object.keys(selectableTopics)[index]
 				}
 
@@ -239,8 +322,14 @@ ScrollView {
 				}
 
 				CheckBox {
-					Layout.preferredWidth: 0.2 * root.width
+					Layout.preferredWidth: 0.15 * root.width
 					Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+				}
+
+				CheckBox {
+					Layout.preferredWidth: 0.15 * root.width
+					Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+					enabled: selectableTopics[Object.keys(selectableTopics)[index]] == "DoubleArray"
 				}
 			}
 		}
@@ -256,8 +345,6 @@ ScrollView {
 				annotator.topics[Object.keys(annotator.topics)[i]] != "Image") {
 				temp[Object.keys(annotator.topics)[i]] = annotator.topics[Object.keys(annotator.topics)[i]]
 			}
-
-			console.log(Object.keys(annotator.topics)[i])
 		}
 
 		selectableTopics = new Object(temp)
@@ -267,11 +354,21 @@ ScrollView {
 		useSeparateBag = useSeparateBagCheckBox.checked
 		imageTopic = imageTopicComboBox.currentText
 		audioTopic = audioTopicComboBox.currentText
+		mapImageUrl = mapFileDialog.fileUrl
+		mapWidth = parseFloat(mapWidthInput.text)
+		mapHeight = parseFloat(mapHeightInput.text)
 
 		otherTopics = {}
 		for (var i = 0; i < topicRepeater.count; ++i) {
 			if (topicRepeater.itemAt(i).children[2].checked) {
 				otherTopics[Object.keys(selectableTopics)[i]] = annotator.topics[Object.keys(selectableTopics)[i]]
+			}
+		}
+
+		mapTopics = {}
+		for (var i = 0; i < topicRepeater.count; ++i) {
+			if (topicRepeater.itemAt(i).children[3].checked) {
+				mapTopics[Object.keys(selectableTopics)[i]] = annotator.topics[Object.keys(selectableTopics)[i]]
 			}
 		}
 	}
