@@ -214,7 +214,7 @@ ScrollView {
 
 			TextInput {
 				id: mapWidthInput
-				text: "100"
+				text: "420"
 				validator: IntValidator{bottom: 0}
 			}
 
@@ -225,7 +225,7 @@ ScrollView {
 
 			TextInput {
 				id: mapHeightInput
-				text: "100"
+				text: "420"
 				validator: IntValidator{bottom: 0}
 			}
 

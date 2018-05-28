@@ -55,14 +55,44 @@ ScrollView {
 			}
 
 			onPaint: {
-				if (config != undefined && mapCanvas.isImageLoaded(config.mapImageUrl)) {
+				if (config != undefined) {
 					draw()
 				}
 			}
 
 			function draw() {
 				var ctx = mapCanvas.getContext('2d')
-				ctx.drawImage(config.mapImageUrl, 0, 0, 640, 480)
+
+				ctx.save()
+
+				ctx.clearRect(0, 0, mapCanvas.width, mapCanvas.height)
+
+				if (mapCanvas.isImageLoaded(config.mapImageUrl)) {
+					ctx.drawImage(config.mapImageUrl, 0, 0, 640, 480)
+				}
+
+				for (var i = 0; i < Object.keys(config.mapTopics).length; ++i) {
+					var position = config.bagAnnotator.getCurrentValue(Object.keys(config.mapTopics)[i])
+					if (position != null) {
+						var ox = position[0] / config.mapWidth * mapCanvas.width
+						var oy = position[1] / config.mapHeight * mapCanvas.height
+						var r = mapCanvas.width / 10
+
+						ctx.fillStyle = Qt.rgba(0.8, 0.1, 0.1, 1.0)
+						ctx.beginPath()
+						ctx.ellipse(ox - 0.5 * r, oy - 0.5 * r, r, r)
+						ctx.fill()
+
+						var text = String(i)
+						ctx.font = "48px sans-serif"
+						ctx.fillStyle = Qt.rgba(0.1, 0.1, 0.1, 1.0)
+						ctx.beginPath()
+						ctx.text(text, ox - 0.5 * ctx.measureText(text).width, oy + 18)
+						ctx.fill()
+					}
+				}
+
+				ctx.restore()
 			}
 	    }
 	}
@@ -334,13 +364,13 @@ ScrollView {
 				spacing: 8
 
 				Text {
-					Layout.preferredWidth: 0.4 * root.width
+					Layout.preferredWidth: 0.3 * root.width
 					text: Object.keys(config.otherTopics)[index]
 				}
 
 				Text {
-					Layout.preferredWidth: 0.2 * root.width
-					text: String(config.bagAnnotator.getCurrentValue(Object.keys(config.otherTopics)[index]))
+					Layout.preferredWidth: 0.3 * root.width
+					text: valueToString(config.bagAnnotator.getCurrentValue(Object.keys(config.otherTopics)[index]))
 				}
 
 				Button {
@@ -361,6 +391,8 @@ ScrollView {
 		config.bagAnnotator.setUseSeparateBag(config.useSeparateBag)
 
 		next(config.imageTopic)
+		mapCanvas.loadImage(config.mapImageUrl)
+
 		updateValues()
 
 		config.bagAnnotator.onCurrentTimeChanged.connect(updateValues)
@@ -371,10 +403,38 @@ ScrollView {
 		imageItem.setImage(config.bagAnnotator.getCurrentValue(config.imageTopic))
 
 		for (var i = 0; i < otherTopicsRepeater.count; ++i) {
-			otherTopicsRepeater.itemAt(i).children[1].text = String(config.bagAnnotator.getCurrentValue(Object.keys(config.otherTopics)[i]))
+			otherTopicsRepeater.itemAt(i).children[1].text = valueToString(config.bagAnnotator.getCurrentValue(Object.keys(config.otherTopics)[i]))
 		}
 		
-		mapCanvas.loadImage(config.mapImageUrl)
+		mapCanvas.requestPaint()
+	}
+
+	function valueToString(value) {
+		if (value === undefined) {
+			return "undefined"
+		}
+
+		if (value.length != undefined) {
+			var str = "("
+			for (var i = 0; i < value.length; ++i) {
+				if (i > 0) {
+					str += ", "
+				}
+
+			    var er = /^-?[0-9]+$/;
+			    if (er.test(value[i])) {
+			    	str += value[i]
+			    }
+				else {
+					str += value[i].toFixed(2)
+				}
+			}
+
+			return str + ")"
+		}
+		else {
+			return String(config.bagAnnotator.getCurrentValue(Object.keys(config.otherTopics)[index]))
+		}
 	}
 
 	function updatePlayPauseButtonState(playing){
