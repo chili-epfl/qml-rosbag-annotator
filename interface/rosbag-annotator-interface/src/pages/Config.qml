@@ -27,7 +27,7 @@ ScrollView {
 		anchors.horizontalCenter: parent.horizontalCenter
 		anchors.top: parent.top
 		anchors.topMargin: 8
-		width: 0.9 * parent.width
+		width: 0.95 * parent.width
 		spacing: 4
 
 		RosBagAnnotator {
@@ -84,7 +84,7 @@ ScrollView {
 			rowSpacing: 4
 
 			Rectangle {
-				Layout.preferredWidth: 0.9 * root.width
+				Layout.preferredWidth: 0.95 * root.width
 				Layout.preferredHeight: 1
 				Layout.columnSpan: 2
 				Layout.bottomMargin: 8
@@ -113,7 +113,7 @@ ScrollView {
 			}
 
 			Rectangle {
-				Layout.preferredWidth: 0.9 * root.width
+				Layout.preferredWidth: 0.95 * root.width
 				Layout.preferredHeight: 1
 				Layout.columnSpan: 2
 				Layout.bottomMargin: 8
@@ -142,7 +142,7 @@ ScrollView {
 			}
 
 			Rectangle {
-				Layout.preferredWidth: 0.9 * root.width
+				Layout.preferredWidth: 0.95 * root.width
 				Layout.preferredHeight: 1
 				Layout.columnSpan: 2
 				Layout.bottomMargin: 8
@@ -177,7 +177,7 @@ ScrollView {
 			}
 
 			Rectangle {
-				Layout.preferredWidth: 0.9 * root.width
+				Layout.preferredWidth: 0.95 * root.width
 				Layout.preferredHeight: 1
 				Layout.columnSpan: 2
 				Layout.bottomMargin: 8
@@ -239,7 +239,7 @@ ScrollView {
 			}
 
 			Rectangle {
-				Layout.preferredWidth: 0.9 * root.width
+				Layout.preferredWidth: 0.95 * root.width
 				Layout.preferredHeight: 1
 				Layout.columnSpan: 2
 				Layout.bottomMargin: 8

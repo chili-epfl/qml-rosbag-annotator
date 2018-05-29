@@ -20,7 +20,7 @@ ScrollView {
 		anchors.horizontalCenter: parent.horizontalCenter
 		anchors.top: parent.top
 		anchors.topMargin: 8
-		width: 0.9 * parent.width
+		width: 0.95 * parent.width
 		spacing: 16
 
 		TabBar {
@@ -40,7 +40,11 @@ ScrollView {
 			id: imageStack
 			Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
 			Layout.preferredWidth: 640
+			Layout.maximumWidth: 640
+			Layout.minimumWidth: 640
 			Layout.preferredHeight: 480
+			Layout.maximumHeight: 480
+			Layout.minimumHeight: 480
 			Layout.topMargin: -16
 		    currentIndex: imageTabBar.currentIndex
 
@@ -48,13 +52,21 @@ ScrollView {
 				id: imageItem
 				Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
 				Layout.preferredWidth: 640
+				Layout.maximumWidth: 640
+				Layout.minimumWidth: 640
 				Layout.preferredHeight: 480
+				Layout.maximumHeight: 480
+				Layout.minimumHeight: 480
 			}
 		    Canvas {
 		        id: mapCanvas
 				Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
 				Layout.preferredWidth: 640
-				Layout.preferredHeight: 480	
+				Layout.maximumWidth: 640
+				Layout.minimumWidth: 640
+				Layout.preferredHeight: 480
+				Layout.maximumHeight: 480
+				Layout.minimumHeight: 480
 
 				onImageLoaded: {
 					draw()
@@ -185,14 +197,15 @@ ScrollView {
 				anchors.horizontalCenter: parent.horizontalCenter
 				anchors.top: parent.top
 				anchors.topMargin: 8
-				width: 0.9 * parent.width
-				spacing: 16
+				width: 0.95 * parent.width
+				spacing: 8
 
 				RowLayout {
 					id: annotationComboRow
 					Layout.fillWidth: true
 					Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
-					spacing: 32
+					spacing: 8
+
 					Text {
 						text: "Topic:"
 						font.bold: true
@@ -216,6 +229,10 @@ ScrollView {
 						}
 					}
 
+					Item {
+						Layout.preferredWidth: 32
+					}
+
 					Text {
 						text: "Type:"
 						font.bold: true
@@ -223,9 +240,17 @@ ScrollView {
 
 					ComboBox {
 						id: annotationTypeComboBox
-						model: ["Bool", "Int", "Real", "String", "Array of Int", "Array of Real"]
+						model: ["Bool", "Int", "Double", "String", "IntArray", "DoubleArray"]
 						onActivated: annotationValueInput.text = ""
 					}
+				}
+
+				Rectangle {
+					Layout.preferredWidth: 0.95 * annotationPopup.width
+					Layout.preferredHeight: 1
+					Layout.bottomMargin: 16
+					Layout.topMargin: 16
+					color: "#111111"
 				}
 
 				RowLayout {
@@ -311,41 +336,48 @@ ScrollView {
 							}
 						}
 					}
+
+					Button {
+						Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+						text: "Save"
+						enabled: annotationValueInput.length > 0 && annotationTopicComboBox.currentText.length > 0
+						onClicked: {
+							if (annotationTypeComboBox.currentIndex == 0) {
+								config.bagAnnotator.annotate(annotationTopicComboBox.currentText, Boolean(parseInt(annotationValueInput.text)), RosBagAnnotator.BOOL)
+							}
+							else if (annotationTypeComboBox.currentIndex == 1) {
+								config.bagAnnotator.annotate(annotationTopicComboBox.currentText, parseInt(annotationValueInput.text), RosBagAnnotator.INT)
+							}
+							else if (annotationTypeComboBox.currentIndex == 2) {
+								config.bagAnnotator.annotate(annotationTopicComboBox.currentText, parseFloat(annotationValueInput.text), RosBagAnnotator.DOUBLE)
+							}
+							else if (annotationTypeComboBox.currentIndex == 3) {
+								config.bagAnnotator.annotate(annotationTopicComboBox.currentText, annotationValueInput.text, RosBagAnnotator.STRING)
+							}
+							else if (annotationTypeComboBox.currentIndex == 4) {
+								config.bagAnnotator.annotate(annotationTopicComboBox.currentText, parseIntArray(annotationValueInput.text), RosBagAnnotator.INT_ARRAY)
+							}
+							else if (annotationTypeComboBox.currentIndex == 5) {
+								config.bagAnnotator.annotate(annotationTopicComboBox.currentText, parseFloatArray(annotationValueInput.text), RosBagAnnotator.DOUBLE_ARRAY)
+							}
+
+							annotationPopup.close()
+						}
+					}
 				}
 
-				Button {
-					Layout.margins: 16
+				Text {
+					Layout.margins: 8
 					Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
-					text: "Save"
-					enabled: annotationValueInput.length > 0 && annotationTopicComboBox.currentText.length > 0
-					onClicked: {
-						if (annotationTypeComboBox.currentIndex == 0) {
-							config.bagAnnotator.annotate(annotationTopicComboBox.currentText, Boolean(parseInt(annotationValueInput.text)), RosBagAnnotator.BOOL)
-						}
-						else if (annotationTypeComboBox.currentIndex == 1) {
-							config.bagAnnotator.annotate(annotationTopicComboBox.currentText, parseInt(annotationValueInput.text), RosBagAnnotator.INT)
-						}
-						else if (annotationTypeComboBox.currentIndex == 2) {
-							config.bagAnnotator.annotate(annotationTopicComboBox.currentText, parseFloat(annotationValueInput.text), RosBagAnnotator.DOUBLE)
-						}
-						else if (annotationTypeComboBox.currentIndex == 3) {
-							config.bagAnnotator.annotate(annotationTopicComboBox.currentText, annotationValueInput.text, RosBagAnnotator.STRING)
-						}
-						else if (annotationTypeComboBox.currentIndex == 4) {
-							config.bagAnnotator.annotate(annotationTopicComboBox.currentText, parseIntArray(annotationValueInput.text), RosBagAnnotator.INT_ARRAY)
-						}
-						else if (annotationTypeComboBox.currentIndex == 5) {
-							config.bagAnnotator.annotate(annotationTopicComboBox.currentText, parseFloatArray(annotationValueInput.text), RosBagAnnotator.DOUBLE_ARRAY)
-						}
-
-						annotationPopup.close()
-					}
+					visible: annotationValueInput.length == 0 || annotationTopicComboBox.currentText.length == 0
+					text: "Topic and value must both be defined in order to save the annotation"
+					color: "#ff2222"
 				}
 			}
 		}
 
 		Rectangle {
-			Layout.preferredWidth: 0.9 * root.width
+			Layout.preferredWidth: 0.95 * root.width
 			Layout.preferredHeight: 1
 			Layout.bottomMargin: 16
 			Layout.topMargin: 16
