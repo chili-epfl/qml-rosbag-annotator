@@ -15,88 +15,6 @@ ScrollView {
 	property var config
 	property real playbackFreq: 30.0
 
-	TabBar {
-	    id: imageTabBar
-	    anchors.horizontalCenter: parent.horizontalCenter
-	    anchors.top: parent.top
-		anchors.topMargin: 16
-		width: 640
-	    TabButton {
-	        text: qsTr("Video Topic")
-	    }
-	    TabButton {
-	        text: qsTr("Map")
-	    }
-	}
-
-	StackLayout {
-		id: imageStack
-	    anchors.horizontalCenter: parent.horizontalCenter
-	    anchors.top: imageTabBar.bottom
-		anchors.topMargin: 8
-		width: 640
-		height: 480
-	    currentIndex: imageTabBar.currentIndex
-
-		ImageItem {
-			id: imageItem
-			Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
-			width: 640
-			height: 480
-		}
-	    Canvas {
-	        id: mapCanvas
-			Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
-			width: 640
-			height: 480
-
-			onImageLoaded: {
-				draw()
-			}
-
-			onPaint: {
-				if (config != undefined) {
-					draw()
-				}
-			}
-
-			function draw() {
-				var ctx = mapCanvas.getContext('2d')
-
-				ctx.save()
-
-				ctx.clearRect(0, 0, mapCanvas.width, mapCanvas.height)
-
-				if (mapCanvas.isImageLoaded(config.mapImageUrl)) {
-					ctx.drawImage(config.mapImageUrl, 0, 0, 640, 480)
-				}
-
-				for (var i = 0; i < Object.keys(config.mapTopics).length; ++i) {
-					var position = config.bagAnnotator.getCurrentValue(Object.keys(config.mapTopics)[i])
-					if (position != null) {
-						var ox = position[0] / config.mapWidth * mapCanvas.width
-						var oy = position[1] / config.mapHeight * mapCanvas.height
-						var r = mapCanvas.width / 10
-
-						ctx.fillStyle = Qt.rgba(0.8, 0.1, 0.1, 1.0)
-						ctx.beginPath()
-						ctx.ellipse(ox - 0.5 * r, oy - 0.5 * r, r, r)
-						ctx.fill()
-
-						var text = String(i)
-						ctx.font = "48px sans-serif"
-						ctx.fillStyle = Qt.rgba(0.1, 0.1, 0.1, 1.0)
-						ctx.beginPath()
-						ctx.text(text, ox - 0.5 * ctx.measureText(text).width, oy + 18)
-						ctx.fill()
-					}
-				}
-
-				ctx.restore()
-			}
-	    }
-	}
-
 	ColumnLayout {
 		id: topLayout
 		anchors.horizontalCenter: parent.horizontalCenter
@@ -104,6 +22,86 @@ ScrollView {
 		anchors.topMargin: 8
 		width: 0.9 * parent.width
 		spacing: 16
+
+		TabBar {
+		    id: imageTabBar
+			Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+			Layout.preferredWidth: 640
+			Layout.topMargin: 8
+		    TabButton {
+		        text: qsTr("Video Topic")
+		    }
+		    TabButton {
+		        text: qsTr("Map")
+		    }
+		}
+
+		StackLayout {
+			id: imageStack
+			Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+			Layout.preferredWidth: 640
+			Layout.preferredHeight: 480
+			Layout.topMargin: -16
+		    currentIndex: imageTabBar.currentIndex
+
+			ImageItem {
+				id: imageItem
+				Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+				Layout.preferredWidth: 640
+				Layout.preferredHeight: 480
+			}
+		    Canvas {
+		        id: mapCanvas
+				Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+				Layout.preferredWidth: 640
+				Layout.preferredHeight: 480	
+
+				onImageLoaded: {
+					draw()
+				}
+
+				onPaint: {
+					if (config != undefined) {
+						draw()
+					}
+				}
+
+				function draw() {
+					var ctx = mapCanvas.getContext('2d')
+
+					ctx.save()
+
+					ctx.clearRect(0, 0, mapCanvas.width, mapCanvas.height)
+
+					if (mapCanvas.isImageLoaded(config.mapImageUrl)) {
+						ctx.drawImage(config.mapImageUrl, 0, 0, 640, 480)
+					}
+
+					for (var i = 0; i < Object.keys(config.mapTopics).length; ++i) {
+						var position = config.bagAnnotator.getCurrentValue(Object.keys(config.mapTopics)[i])
+						if (position != null) {
+							var ox = position[0] / config.mapWidth * mapCanvas.width
+							var oy = position[1] / config.mapHeight * mapCanvas.height
+							var r = mapCanvas.width / 10
+
+							ctx.fillStyle = Qt.rgba(0.8, 0.1, 0.1, 1.0)
+							ctx.beginPath()
+							ctx.ellipse(ox - 0.5 * r, oy - 0.5 * r, r, r)
+							ctx.fill()
+
+							var text = String(i)
+							ctx.font = "48px sans-serif"
+							ctx.fillStyle = Qt.rgba(0.1, 0.1, 0.1, 1.0)
+							ctx.beginPath()
+							ctx.text(text, ox - 0.5 * ctx.measureText(text).width, oy + 18)
+							ctx.fill()
+						}
+					}
+
+					ctx.restore()
+				}
+		    }
+		}
 
 		Text {
 			Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
@@ -421,7 +419,7 @@ ScrollView {
 		}
 
 		if (type === "IntArray" || type === "DoubleArray") {
-			var str = "("
+			var str = "["
 			for (var i = 0; i < value.length; ++i) {
 				if (i > 0) {
 					str += ", "
@@ -435,7 +433,7 @@ ScrollView {
 				}
 			}
 
-			return str + ")"
+			return str + "]"
 		}
 		else if (type == "Double") {
 			return value.toFixed(4)
