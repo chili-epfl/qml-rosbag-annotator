@@ -124,7 +124,9 @@ ScrollView {
 			id: progressBar
 
 			Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
-			Layout.preferredWidth: 0.8 * root.width
+			Layout.preferredWidth: 640
+			Layout.maximumWidth: 640
+			Layout.minimumWidth: 640
 			Layout.preferredHeight: 30
 
 			color: "lightGray"
@@ -213,6 +215,7 @@ ScrollView {
 
 					ComboBox {
 						id: annotationTopicComboBox
+						Layout.preferredWidth: 0.4 * annotationPopup.width
 						editable: true
 						model: config != undefined ? Object.keys(config.bagAnnotator.annotationTopics) : 0
 

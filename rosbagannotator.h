@@ -202,7 +202,6 @@ private:
 		ros::Time time;
 		time.fromNSec(mCurrentTime);
 		std::string annotationTopic = ("/annotation/" + topic).toStdString();
-		qDebug() << "Writing annotation of type" << type << "to topic" << annotationTopic.c_str();
 
 		QString annotationBagPath = mBagPath;
 		rosbag::bagmode::BagMode mode = rosbag::bagmode::Append;
