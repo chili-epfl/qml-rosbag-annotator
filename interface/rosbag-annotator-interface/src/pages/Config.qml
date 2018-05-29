@@ -212,7 +212,7 @@ ScrollView {
 				text: "Map width (in mm):"
 			}
 
-			TextInput {
+			TextField {
 				id: mapWidthInput
 				text: "420"
 				validator: IntValidator{bottom: 0}
@@ -223,7 +223,7 @@ ScrollView {
 				text: "Map height (in mm):"
 			}
 
-			TextInput {
+			TextField {
 				id: mapHeightInput
 				text: "420"
 				validator: IntValidator{bottom: 0}

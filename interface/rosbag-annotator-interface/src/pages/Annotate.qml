@@ -18,7 +18,7 @@ ScrollView {
 	ColumnLayout {
 		id: topLayout
 		anchors.horizontalCenter: parent.horizontalCenter
-		anchors.top: imageStack.bottom
+		anchors.top: parent.top
 		anchors.topMargin: 8
 		width: 0.9 * parent.width
 		spacing: 16
@@ -259,7 +259,7 @@ ScrollView {
 						font.bold: true
 					}
 
-					TextInput {
+					TextField {
 						Layout.preferredWidth: 160
 						Layout.margins: 8
 						Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
