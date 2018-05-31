@@ -220,7 +220,56 @@ ScrollView {
 				spacing: 8
 
 				RowLayout {
-					id: annotationComboRow
+					id: newAnnotationTopicRow
+					Layout.fillWidth: true
+					Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+					spacing: 16
+
+					Text {
+						text: "Create new annotation topic?"
+						font.bold: true
+					}
+
+					TextField {
+						id: newAnnotationTopicInput
+						Layout.preferredWidth: 0.4 * annotationPopup.width
+
+						validator: RegExpValidator {
+							regExp: /^[a-zA-Z0-9_\/-]*$/
+						}
+
+						onAccepted: {
+							if (newAnnotationTopicInput.length > 0) {
+								newAnnotationTopicRow.createAnnotationTopic(newAnnotationTopicInput.text)
+							}
+						}
+					}
+
+					Button {
+						text: "Create"
+						enabled: newAnnotationTopicInput.length > 0
+						onClicked: newAnnotationTopicRow.createAnnotationTopic(newAnnotationTopicInput.text)
+					}
+
+					function createAnnotationTopic(topic) {
+						if (config.bagAnnotator.annotationTopics[newAnnotationTopicInput.text] === undefined) {
+				        	var tmp = Object.keys(config.bagAnnotator.annotationTopics)
+				            tmp.push(newAnnotationTopicInput.text)
+				            annotationTopicComboBox.model = tmp
+				        }
+					}
+				}
+
+				Rectangle {
+					Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+					Layout.preferredWidth: parent.width
+					Layout.preferredHeight: 1
+					Layout.bottomMargin: 16
+					Layout.topMargin: 16
+					color: "#111111"
+				}
+
+				RowLayout {
 					Layout.fillWidth: true
 					Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
 					spacing: 8
@@ -233,20 +282,8 @@ ScrollView {
 					ComboBox {
 						id: annotationTopicComboBox
 						Layout.preferredWidth: 0.4 * annotationPopup.width
-						editable: true
+						editable: false
 						model: config != undefined ? Object.keys(config.bagAnnotator.annotationTopics) : 0
-
-					    onAccepted: {
-					        if (config.bagAnnotator.annotationTopics[editText] === undefined) {
-					        	var tmp = Object.keys(config.bagAnnotator.annotationTopics)
-					            tmp.push(editText)
-					            model = tmp
-					        }
-					    }
-
-						validator: RegExpValidator {
-							regExp: /^[a-zA-Z0-9_\/-]*$/
-						}
 					}
 
 					Item {
@@ -266,7 +303,8 @@ ScrollView {
 				}
 
 				Rectangle {
-					Layout.preferredWidth: 0.95 * annotationPopup.width
+					Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+					Layout.preferredWidth: parent.width
 					Layout.preferredHeight: 1
 					Layout.bottomMargin: 16
 					Layout.topMargin: 16

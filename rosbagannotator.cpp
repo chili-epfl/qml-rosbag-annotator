@@ -528,6 +528,16 @@ void RosBagAnnotator::extractMessage(const rosbag::MessageInstance &msg) {
 		}
 	}
 
+	const QString annotationPrefix("/annotation/");
+	if (topic.startsWith(annotationPrefix)) {
+		QString topicName(topic);
+		topicName.remove(0, annotationPrefix.length());
+		if (mAnnotationTopics.find(topicName) == mAnnotationTopics.end()) {
+			mAnnotationTopics.insert(topicName, type);
+			emit annotationTopicsChanged(mAnnotationTopics);
+		}
+	}
+
 	if (time < mStartTime) {
 		mStartTime = time;
 	}
