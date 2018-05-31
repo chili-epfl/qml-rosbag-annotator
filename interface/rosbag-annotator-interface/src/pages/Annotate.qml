@@ -144,7 +144,10 @@ ScrollView {
 			MouseArea {
 				anchors.fill: parent
 				onClicked: {
-					seek(config.bagAnnotator.length * mouse.x / width);
+					seek(config.bagAnnotator.length * mouse.x / width)
+				}
+				onWheel: {
+					seek(config.bagAnnotator.currentTime + 0.005 * wheel.angleDelta.y)
 				}
 			}
 		}
@@ -257,6 +260,7 @@ ScrollView {
 				}
 
 				RowLayout {
+					id: annotationInputRow
 					Layout.fillWidth: true
 					Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
 					spacing: 8
@@ -338,34 +342,42 @@ ScrollView {
 								return realArrayValidator
 							}
 						}
+
+						onAccepted: {
+							if (annotationValueInput.length > 0 && annotationTopicComboBox.currentText.length > 0) {
+								annotationInputRow.save()
+							}
+						}
 					}
 
 					Button {
 						Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
 						text: "Save"
 						enabled: annotationValueInput.length > 0 && annotationTopicComboBox.currentText.length > 0
-						onClicked: {
-							if (annotationTypeComboBox.currentIndex == 0) {
-								config.bagAnnotator.annotate(annotationTopicComboBox.currentText, Boolean(parseInt(annotationValueInput.text)), RosBagAnnotator.BOOL)
-							}
-							else if (annotationTypeComboBox.currentIndex == 1) {
-								config.bagAnnotator.annotate(annotationTopicComboBox.currentText, parseInt(annotationValueInput.text), RosBagAnnotator.INT)
-							}
-							else if (annotationTypeComboBox.currentIndex == 2) {
-								config.bagAnnotator.annotate(annotationTopicComboBox.currentText, parseFloat(annotationValueInput.text), RosBagAnnotator.DOUBLE)
-							}
-							else if (annotationTypeComboBox.currentIndex == 3) {
-								config.bagAnnotator.annotate(annotationTopicComboBox.currentText, annotationValueInput.text, RosBagAnnotator.STRING)
-							}
-							else if (annotationTypeComboBox.currentIndex == 4) {
-								config.bagAnnotator.annotate(annotationTopicComboBox.currentText, parseIntArray(annotationValueInput.text), RosBagAnnotator.INT_ARRAY)
-							}
-							else if (annotationTypeComboBox.currentIndex == 5) {
-								config.bagAnnotator.annotate(annotationTopicComboBox.currentText, parseFloatArray(annotationValueInput.text), RosBagAnnotator.DOUBLE_ARRAY)
-							}
+						onClicked: annotationInputRow.save()
+					}
 
-							annotationPopup.close()
+					function save() {
+						if (annotationTypeComboBox.currentIndex == 0) {
+							config.bagAnnotator.annotate(annotationTopicComboBox.currentText, Boolean(parseInt(annotationValueInput.text)), RosBagAnnotator.BOOL)
 						}
+						else if (annotationTypeComboBox.currentIndex == 1) {
+							config.bagAnnotator.annotate(annotationTopicComboBox.currentText, parseInt(annotationValueInput.text), RosBagAnnotator.INT)
+						}
+						else if (annotationTypeComboBox.currentIndex == 2) {
+							config.bagAnnotator.annotate(annotationTopicComboBox.currentText, parseFloat(annotationValueInput.text), RosBagAnnotator.DOUBLE)
+						}
+						else if (annotationTypeComboBox.currentIndex == 3) {
+							config.bagAnnotator.annotate(annotationTopicComboBox.currentText, annotationValueInput.text, RosBagAnnotator.STRING)
+						}
+						else if (annotationTypeComboBox.currentIndex == 4) {
+							config.bagAnnotator.annotate(annotationTopicComboBox.currentText, parseIntArray(annotationValueInput.text), RosBagAnnotator.INT_ARRAY)
+						}
+						else if (annotationTypeComboBox.currentIndex == 5) {
+							config.bagAnnotator.annotate(annotationTopicComboBox.currentText, parseFloatArray(annotationValueInput.text), RosBagAnnotator.DOUBLE_ARRAY)
+						}
+
+						annotationPopup.close()
 					}
 				}
 
