@@ -166,7 +166,7 @@ ScrollView {
 			Text {
 				id: audioTopicText
 				Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-				text: "Audio topic to use during annotation:"
+				text: "Audio topic to use during annotation (optional):"
 			}
 
 			ComboBox {
@@ -188,7 +188,7 @@ ScrollView {
 			FileDialog {
 				id: mapFileDialog
 
-				title: "Optionally, choose a map image file"
+				title: "Choose a map image file"
 				modality: Qt.WindowModal
 				selectMultiple: false
 

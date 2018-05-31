@@ -420,6 +420,10 @@ ScrollView {
 				}
 			}
 		}
+
+		Item {
+			Layout.preferredHeight: 8
+		}
 	}
 
 	function load(configuration) {
