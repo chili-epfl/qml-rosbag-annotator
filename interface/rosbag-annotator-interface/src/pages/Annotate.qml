@@ -57,6 +57,13 @@ ScrollView {
 				Layout.preferredHeight: 480
 				Layout.maximumHeight: 480
 				Layout.minimumHeight: 480
+
+				MouseArea {
+					anchors.fill: parent
+					onWheel: {
+						seek(config.bagAnnotator.currentTime + 0.005 * wheel.angleDelta.y)
+					}
+				}
 			}
 		    Canvas {
 		        id: mapCanvas
@@ -111,6 +118,13 @@ ScrollView {
 					}
 
 					ctx.restore()
+				}
+
+				MouseArea {
+					anchors.fill: parent
+					onWheel: {
+						seek(config.bagAnnotator.currentTime + 0.005 * wheel.angleDelta.y)
+					}
 				}
 		    }
 		}
