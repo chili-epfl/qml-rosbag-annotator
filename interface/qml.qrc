@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/">
+        <file>src/main.qml</file>
+        <file>src/pages/Config.qml</file>
+        <file>src/pages/Annotate.qml</file>
+    </qresource>
+</RCC>
