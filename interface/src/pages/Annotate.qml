@@ -467,17 +467,23 @@ ScrollView {
 			model: config != undefined ? Object.keys(config.otherTopics).length : 0
 
 			RowLayout {
-				Layout.fillWidth: true
+				Layout.preferredWidth: 0.8 * root.width
+				Layout.minimumWidth: 0.8 * root.width
+				Layout.maximumWidth: 0.8 * root.width
 				Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
 				spacing: 8
 
 				Text {
+					Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
 					Layout.preferredWidth: 0.3 * root.width
+
 					text: Object.keys(config.otherTopics)[index]
 				}
 
 				Text {
-					Layout.preferredWidth: 0.3 * root.width
+					Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
+					Layout.preferredWidth: 0.25 * root.width
+
 					text: valueToString(
 						config.bagAnnotator.getCurrentValue(Object.keys(config.otherTopics)[index]),
 						config.otherTopics[Object.keys(config.otherTopics)[index]]
@@ -485,11 +491,15 @@ ScrollView {
 				}
 
 				Button {
+					Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
+					Layout.preferredWidth: 100
 					text: "Previous"
 					onClicked: previous(Object.keys(config.otherTopics)[index])
 				}
 
 				Button {
+					Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
+					Layout.preferredWidth: 100
 					text: "Next"
 					onClicked: next(Object.keys(config.otherTopics)[index])
 				}
