@@ -13,7 +13,7 @@ Features:
  - `ros-kinetic-std-msgs`
  - `ros-kinetic-audio-common`
  - `ros-kinetic-sensor-msgs`
- - `chili-ros-msgs`
+ - `ros-chili-msgs`
 
 ### Build instructions
 ```
