@@ -17,8 +17,8 @@ Features:
 
 ### Build instructions
 ```
-	. /opt/ros/kinetic/setup.bash
-	mkdir build
-	cd build
-	make -j 8 && sudo make install
+. /opt/ros/kinetic/setup.bash
+mkdir build
+cd build
+make -j 8 && sudo make install
 ```
