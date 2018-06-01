@@ -15,6 +15,244 @@ ScrollView {
 	property var config
 	property real playbackFreq: 30.0
 
+	Popup {
+		id: annotationPopup
+		x: 0.5 * (root.width - 640)
+		width: 640
+		modal: true
+		focus: true
+
+		ColumnLayout {
+			anchors.horizontalCenter: parent.horizontalCenter
+			anchors.top: parent.top
+			anchors.topMargin: 8
+			width: 0.95 * parent.width
+			spacing: 8
+
+			RowLayout {
+				id: newAnnotationTopicRow
+				Layout.fillWidth: true
+				Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+				spacing: 16
+
+				Text {
+					text: "Create new annotation topic?"
+					font.bold: true
+				}
+
+				TextField {
+					id: newAnnotationTopicInput
+					Layout.preferredWidth: 0.4 * annotationPopup.width
+
+					validator: RegExpValidator {
+						regExp: /^[a-zA-Z0-9_\/-]*$/
+					}
+
+					onAccepted: {
+						if (newAnnotationTopicInput.length > 0) {
+							newAnnotationTopicRow.createAnnotationTopic(newAnnotationTopicInput.text)
+						}
+					}
+				}
+
+				Button {
+					text: "Create"
+					enabled: newAnnotationTopicInput.length > 0
+					onClicked: newAnnotationTopicRow.createAnnotationTopic(newAnnotationTopicInput.text)
+				}
+
+				function createAnnotationTopic(topic) {
+					if (config.bagAnnotator.annotationTopics[newAnnotationTopicInput.text] === undefined) {
+			        	var tmp = Object.keys(config.bagAnnotator.annotationTopics)
+			            tmp.push(newAnnotationTopicInput.text)
+			            annotationTopicComboBox.model = tmp
+			        }
+				}
+			}
+
+			Rectangle {
+				Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+				Layout.preferredWidth: parent.width
+				Layout.preferredHeight: 1
+				Layout.bottomMargin: 16
+				Layout.topMargin: 16
+				color: "#111111"
+			}
+
+			RowLayout {
+				Layout.fillWidth: true
+				Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+				spacing: 8
+
+				Text {
+					text: "Topic:"
+					font.bold: true
+				}
+
+				ComboBox {
+					id: annotationTopicComboBox
+					Layout.preferredWidth: 0.4 * annotationPopup.width
+					editable: false
+					model: config != undefined ? Object.keys(config.bagAnnotator.annotationTopics) : 0
+				}
+
+				Item {
+					Layout.preferredWidth: 32
+				}
+
+				Text {
+					text: "Type:"
+					font.bold: true
+				}
+
+				ComboBox {
+					id: annotationTypeComboBox
+					model: ["Bool", "Int", "Double", "String", "IntArray", "DoubleArray"]
+					onActivated: annotationValueInput.text = ""
+				}
+			}
+
+			Rectangle {
+				Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+				Layout.preferredWidth: parent.width
+				Layout.preferredHeight: 1
+				Layout.bottomMargin: 16
+				Layout.topMargin: 16
+				color: "#111111"
+			}
+
+			RowLayout {
+				id: annotationInputRow
+				Layout.fillWidth: true
+				Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+				spacing: 8
+
+				Text {
+					Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+
+					text: {
+						if (annotationTypeComboBox.currentIndex == 0) {
+							return "Input either 0 or 1:"
+						}
+						else if (annotationTypeComboBox.currentIndex == 1) {
+							return "Input an integer:"
+						}
+						else if (annotationTypeComboBox.currentIndex == 2) {
+							return "Input a real number:"
+						}
+						else if (annotationTypeComboBox.currentIndex == 3) {
+							return "Input a text string:"
+						}
+						else if (annotationTypeComboBox.currentIndex == 4) {
+							return "Input a comma-separated list of integers:"
+						}
+						else if (annotationTypeComboBox.currentIndex == 5) {
+							return "Input a comma-separated list of real numbers:"
+						}
+					}
+					font.bold: true
+				}
+
+				TextField {
+					Layout.preferredWidth: 160
+					Layout.margins: 8
+					Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
+
+					id: annotationValueInput
+
+					IntValidator {
+						id: boolValidator
+						bottom: 0
+						top: 1
+					}
+					IntValidator {
+						id: intValidator
+					}
+					DoubleValidator {
+						id: realValidator
+					}
+					RegExpValidator {
+						id: stringValidator
+						regExp: /.*$/
+					}
+					RegExpValidator {
+						id: intArrayValidator
+						regExp: /\d{1,12}(?: *, *\d{1,12})+ *$/
+					}
+					RegExpValidator {
+						id: realArrayValidator
+						regExp: /(\d{1,12}(?:\.\d{1,12})?)(?: *, *(\d{1,12}(?:\.\d{1,12})?))+ *$/
+					}
+
+					validator: {
+						if (annotationTypeComboBox.currentIndex == 0) {
+							return boolValidator
+						}
+						else if (annotationTypeComboBox.currentIndex == 1) {
+							return intValidator
+						}
+						else if (annotationTypeComboBox.currentIndex == 2) {
+							return realValidator
+						}
+						else if (annotationTypeComboBox.currentIndex == 3) {
+							return stringValidator
+						}
+						else if (annotationTypeComboBox.currentIndex == 4) {
+							return intArrayValidator
+						}
+						else if (annotationTypeComboBox.currentIndex == 5) {
+							return realArrayValidator
+						}
+					}
+
+					onAccepted: {
+						if (annotationValueInput.length > 0 && annotationTopicComboBox.currentText.length > 0) {
+							annotationInputRow.save()
+						}
+					}
+				}
+
+				Button {
+					Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+					text: "Save"
+					enabled: annotationValueInput.length > 0 && annotationTopicComboBox.currentText.length > 0
+					onClicked: annotationInputRow.save()
+				}
+
+				function save() {
+					if (annotationTypeComboBox.currentIndex == 0) {
+						config.bagAnnotator.annotate(annotationTopicComboBox.currentText, Boolean(parseInt(annotationValueInput.text)), RosBagAnnotator.BOOL)
+					}
+					else if (annotationTypeComboBox.currentIndex == 1) {
+						config.bagAnnotator.annotate(annotationTopicComboBox.currentText, parseInt(annotationValueInput.text), RosBagAnnotator.INT)
+					}
+					else if (annotationTypeComboBox.currentIndex == 2) {
+						config.bagAnnotator.annotate(annotationTopicComboBox.currentText, parseFloat(annotationValueInput.text), RosBagAnnotator.DOUBLE)
+					}
+					else if (annotationTypeComboBox.currentIndex == 3) {
+						config.bagAnnotator.annotate(annotationTopicComboBox.currentText, annotationValueInput.text, RosBagAnnotator.STRING)
+					}
+					else if (annotationTypeComboBox.currentIndex == 4) {
+						config.bagAnnotator.annotate(annotationTopicComboBox.currentText, parseIntArray(annotationValueInput.text), RosBagAnnotator.INT_ARRAY)
+					}
+					else if (annotationTypeComboBox.currentIndex == 5) {
+						config.bagAnnotator.annotate(annotationTopicComboBox.currentText, parseFloatArray(annotationValueInput.text), RosBagAnnotator.DOUBLE_ARRAY)
+					}
+
+					annotationPopup.close()
+				}
+			}
+
+			Text {
+				Layout.margins: 8
+				Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+				visible: annotationValueInput.length == 0 || annotationTopicComboBox.currentText.length == 0
+				text: "Topic and value must both be defined in order to save the annotation"
+				color: "#ff2222"
+			}
+		}
+	}
+
 	ColumnLayout {
 		id: topLayout
 		anchors.horizontalCenter: parent.horizontalCenter
@@ -202,244 +440,6 @@ ScrollView {
 			Button {
 				text: "Add annotation"
 				onClicked: annotationPopup.open()
-			}
-		}
-
-		Popup {
-			id: annotationPopup
-			x: 0.5 * (root.width - 640)
-			width: 640
-			modal: true
-			focus: true
-
-			ColumnLayout {
-				anchors.horizontalCenter: parent.horizontalCenter
-				anchors.top: parent.top
-				anchors.topMargin: 8
-				width: 0.95 * parent.width
-				spacing: 8
-
-				RowLayout {
-					id: newAnnotationTopicRow
-					Layout.fillWidth: true
-					Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
-					spacing: 16
-
-					Text {
-						text: "Create new annotation topic?"
-						font.bold: true
-					}
-
-					TextField {
-						id: newAnnotationTopicInput
-						Layout.preferredWidth: 0.4 * annotationPopup.width
-
-						validator: RegExpValidator {
-							regExp: /^[a-zA-Z0-9_\/-]*$/
-						}
-
-						onAccepted: {
-							if (newAnnotationTopicInput.length > 0) {
-								newAnnotationTopicRow.createAnnotationTopic(newAnnotationTopicInput.text)
-							}
-						}
-					}
-
-					Button {
-						text: "Create"
-						enabled: newAnnotationTopicInput.length > 0
-						onClicked: newAnnotationTopicRow.createAnnotationTopic(newAnnotationTopicInput.text)
-					}
-
-					function createAnnotationTopic(topic) {
-						if (config.bagAnnotator.annotationTopics[newAnnotationTopicInput.text] === undefined) {
-				        	var tmp = Object.keys(config.bagAnnotator.annotationTopics)
-				            tmp.push(newAnnotationTopicInput.text)
-				            annotationTopicComboBox.model = tmp
-				        }
-					}
-				}
-
-				Rectangle {
-					Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
-					Layout.preferredWidth: parent.width
-					Layout.preferredHeight: 1
-					Layout.bottomMargin: 16
-					Layout.topMargin: 16
-					color: "#111111"
-				}
-
-				RowLayout {
-					Layout.fillWidth: true
-					Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
-					spacing: 8
-
-					Text {
-						text: "Topic:"
-						font.bold: true
-					}
-
-					ComboBox {
-						id: annotationTopicComboBox
-						Layout.preferredWidth: 0.4 * annotationPopup.width
-						editable: false
-						model: config != undefined ? Object.keys(config.bagAnnotator.annotationTopics) : 0
-					}
-
-					Item {
-						Layout.preferredWidth: 32
-					}
-
-					Text {
-						text: "Type:"
-						font.bold: true
-					}
-
-					ComboBox {
-						id: annotationTypeComboBox
-						model: ["Bool", "Int", "Double", "String", "IntArray", "DoubleArray"]
-						onActivated: annotationValueInput.text = ""
-					}
-				}
-
-				Rectangle {
-					Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
-					Layout.preferredWidth: parent.width
-					Layout.preferredHeight: 1
-					Layout.bottomMargin: 16
-					Layout.topMargin: 16
-					color: "#111111"
-				}
-
-				RowLayout {
-					id: annotationInputRow
-					Layout.fillWidth: true
-					Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
-					spacing: 8
-
-					Text {
-						Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-
-						text: {
-							if (annotationTypeComboBox.currentIndex == 0) {
-								return "Input either 0 or 1:"
-							}
-							else if (annotationTypeComboBox.currentIndex == 1) {
-								return "Input an integer:"
-							}
-							else if (annotationTypeComboBox.currentIndex == 2) {
-								return "Input a real number:"
-							}
-							else if (annotationTypeComboBox.currentIndex == 3) {
-								return "Input a text string:"
-							}
-							else if (annotationTypeComboBox.currentIndex == 4) {
-								return "Input a comma-separated list of integers:"
-							}
-							else if (annotationTypeComboBox.currentIndex == 5) {
-								return "Input a comma-separated list of real numbers:"
-							}
-						}
-						font.bold: true
-					}
-
-					TextField {
-						Layout.preferredWidth: 160
-						Layout.margins: 8
-						Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
-
-						id: annotationValueInput
-
-						IntValidator {
-							id: boolValidator
-							bottom: 0
-							top: 1
-						}
-						IntValidator {
-							id: intValidator
-						}
-						DoubleValidator {
-							id: realValidator
-						}
-						RegExpValidator {
-							id: stringValidator
-							regExp: /.*$/
-						}
-						RegExpValidator {
-							id: intArrayValidator
-							regExp: /\d{1,12}(?: *, *\d{1,12})+ *$/
-						}
-						RegExpValidator {
-							id: realArrayValidator
-							regExp: /(\d{1,12}(?:\.\d{1,12})?)(?: *, *(\d{1,12}(?:\.\d{1,12})?))+ *$/
-						}
-
-						validator: {
-							if (annotationTypeComboBox.currentIndex == 0) {
-								return boolValidator
-							}
-							else if (annotationTypeComboBox.currentIndex == 1) {
-								return intValidator
-							}
-							else if (annotationTypeComboBox.currentIndex == 2) {
-								return realValidator
-							}
-							else if (annotationTypeComboBox.currentIndex == 3) {
-								return stringValidator
-							}
-							else if (annotationTypeComboBox.currentIndex == 4) {
-								return intArrayValidator
-							}
-							else if (annotationTypeComboBox.currentIndex == 5) {
-								return realArrayValidator
-							}
-						}
-
-						onAccepted: {
-							if (annotationValueInput.length > 0 && annotationTopicComboBox.currentText.length > 0) {
-								annotationInputRow.save()
-							}
-						}
-					}
-
-					Button {
-						Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
-						text: "Save"
-						enabled: annotationValueInput.length > 0 && annotationTopicComboBox.currentText.length > 0
-						onClicked: annotationInputRow.save()
-					}
-
-					function save() {
-						if (annotationTypeComboBox.currentIndex == 0) {
-							config.bagAnnotator.annotate(annotationTopicComboBox.currentText, Boolean(parseInt(annotationValueInput.text)), RosBagAnnotator.BOOL)
-						}
-						else if (annotationTypeComboBox.currentIndex == 1) {
-							config.bagAnnotator.annotate(annotationTopicComboBox.currentText, parseInt(annotationValueInput.text), RosBagAnnotator.INT)
-						}
-						else if (annotationTypeComboBox.currentIndex == 2) {
-							config.bagAnnotator.annotate(annotationTopicComboBox.currentText, parseFloat(annotationValueInput.text), RosBagAnnotator.DOUBLE)
-						}
-						else if (annotationTypeComboBox.currentIndex == 3) {
-							config.bagAnnotator.annotate(annotationTopicComboBox.currentText, annotationValueInput.text, RosBagAnnotator.STRING)
-						}
-						else if (annotationTypeComboBox.currentIndex == 4) {
-							config.bagAnnotator.annotate(annotationTopicComboBox.currentText, parseIntArray(annotationValueInput.text), RosBagAnnotator.INT_ARRAY)
-						}
-						else if (annotationTypeComboBox.currentIndex == 5) {
-							config.bagAnnotator.annotate(annotationTopicComboBox.currentText, parseFloatArray(annotationValueInput.text), RosBagAnnotator.DOUBLE_ARRAY)
-						}
-
-						annotationPopup.close()
-					}
-				}
-
-				Text {
-					Layout.margins: 8
-					Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
-					visible: annotationValueInput.length == 0 || annotationTopicComboBox.currentText.length == 0
-					text: "Topic and value must both be defined in order to save the annotation"
-					color: "#ff2222"
-				}
 			}
 		}
 
