@@ -3,12 +3,15 @@
 ImageItem::ImageItem(QQuickItem *parent)
 : QQuickPaintedItem(parent)
 {
-    this->mImage = QImage(":/images/no_image.png");
+    mImage = QImage(":/images/no_image.png");
 }
 
 void ImageItem::paint(QPainter *painter) {
+    if (mImage.isNull())
+        return;
+
     QRectF bounds = boundingRect();
-    QImage scaled = this->mImage.scaledToHeight(bounds.height());
+    QImage scaled = mImage.scaledToHeight(bounds.height());
     QPointF center = bounds.center() - scaled.rect().center();
 
     if(center.x() < 0)
@@ -20,7 +23,7 @@ void ImageItem::paint(QPainter *painter) {
 }
 
 void ImageItem::setImage(const QImage &image) {
-    this->mImage = image;
+    mImage = image;
     update();
 
     emit imageChanged();

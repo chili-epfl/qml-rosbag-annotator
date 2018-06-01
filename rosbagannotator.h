@@ -161,12 +161,19 @@ private:
 
 	template<class T>
 	uint64_t previousMessageTime(const QList<QPair<uint64_t, T>>& messages, typename QList<QPair<uint64_t, T>>::const_iterator current) {
-		if (current <= messages.begin()) {
+		if (current < messages.begin()) {
 			return mCurrentTime;
 		}
 
-		auto previous = current - 1;
-		return previous->first;
+		if (current->first < mCurrentTime) {
+			return current->first;
+		}
+
+		if (current > messages.begin()) {
+			current -= 1;
+		}
+
+		return current->first;
 	}
 
 	template<class T>

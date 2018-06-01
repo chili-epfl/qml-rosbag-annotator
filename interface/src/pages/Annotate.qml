@@ -9,7 +9,7 @@ import ch.epfl.chili 1.0
 
 ScrollView {
 	id: root
-	anchors.fill: parent
+	// anchors.fill: parent
 
 	property var title: qsTr("Annotate")
 	property var config
@@ -301,6 +301,16 @@ ScrollView {
 					anchors.fill: parent
 					onWheel: {
 						seek(config.bagAnnotator.currentTime + 0.005 * wheel.angleDelta.y)
+					}
+					onClicked: {
+						if (!mouse.wasHeld) {
+							if (config.bagAnnotator.playing) {
+								pause()
+							}
+							else {
+								play()
+							}
+						}
 					}
 				}
 			}
