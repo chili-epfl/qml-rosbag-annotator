@@ -1,5 +1,5 @@
 TEMPLATE = lib
-TARGET = qml-rosbag-annotator
+TARGET = rosbagannotatorplugin
 QT += qml quick multimedia
 CONFIG += plugin c++11
 
@@ -8,12 +8,12 @@ uri = ch.epfl.chili
 
 # Input
 SOURCES += \
-        qml-rosbag-annotator_plugin.cpp \
+        rosbagannotatorplugin.cpp \
         rosbagannotator.cpp \
         imageitem.cpp
 
 HEADERS += \
-        qml-rosbag-annotator_plugin.h \
+        rosbagannotatorplugin.h \
         rosbagannotator.h \
         imageitem.h
 

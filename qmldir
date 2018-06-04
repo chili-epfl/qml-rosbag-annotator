@@ -1,2 +1,2 @@
 module ch.epfl.chili
-plugin qml-rosbag-annotator
+plugin rosbagannotatorplugin

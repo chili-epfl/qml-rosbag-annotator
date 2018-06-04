@@ -1,4 +1,4 @@
-#include "qml-rosbag-annotator_plugin.h"
+#include "rosbagannotatorplugin.h"
 #include "rosbagannotator.h"
 #include "imageitem.h"
 
