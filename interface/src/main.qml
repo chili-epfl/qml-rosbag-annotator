@@ -6,6 +6,8 @@ import QtQuick.Dialogs 1.3
 import QtQuick.Extras 1.4
 import QtQuick.Layouts 1.3
 
+import ch.epfl.chili.ros.annotation 1.0
+
 import "./pages"
 
 ApplicationWindow {
