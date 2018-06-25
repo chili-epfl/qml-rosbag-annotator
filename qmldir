@@ -1,2 +1,2 @@
-module ch.epfl.chili
+module ch.epfl.chili.ros.annotation
 plugin rosbagannotatorplugin

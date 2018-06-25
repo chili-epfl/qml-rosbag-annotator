@@ -4,7 +4,7 @@ QT += qml quick multimedia
 CONFIG += plugin c++11
 
 TARGET = $$qtLibraryTarget($$TARGET)
-uri = ch.epfl.chili
+uri = ch.epfl.chili.ros.annotation
 
 # Input
 SOURCES += \

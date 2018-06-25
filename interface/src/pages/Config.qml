@@ -5,7 +5,7 @@ import QtQml.Models 2.2
 import QtQuick.Dialogs 1.3
 import QtQuick.Layouts 1.3
 
-import ch.epfl.chili 1.0
+import ch.epfl.chili.ros.annotation 1.0
 
 ScrollView {
 	id: root
