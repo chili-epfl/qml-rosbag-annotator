@@ -12,12 +12,11 @@
 #include <audio_common_msgs/AudioData.h>
 
 #include <chili_msgs/Bool.h>
-#include <chili_msgs/Float32.h>
-#include <chili_msgs/Int32.h>
+#include <chili_msgs/Double.h>
+#include <chili_msgs/Int.h>
 #include <chili_msgs/String.h>
-#include <chili_msgs/Vector2Float32.h>
-#include <chili_msgs/Vector2Int32.h>
-#include <chili_msgs/Vector3Float32.h>
+#include <chili_msgs/DoubleArray.h>
+#include <chili_msgs/IntArray.h>
 
 #include <algorithm>
 #include <limits>
@@ -402,18 +401,18 @@ void RosBagAnnotator::extractMessage(const rosbag::MessageInstance &msg) {
 
 		mBoolMsgs[topic].append(QPair<uint64_t, bool>(time, m->value));
 	}
-	else if (type == "chili_msgs/Float32") {
+	else if (type == "chili_msgs/Double") {
 		type = "Double";
-		chili_msgs::Float32::ConstPtr m = msg.instantiate<chili_msgs::Float32>();
+		chili_msgs::Double::ConstPtr m = msg.instantiate<chili_msgs::Double>();
 		if (!mUseRosTime) {
 			time = extractChiliMessageTime(m);
 		}
 
-		mDoubleMsgs[topic].append(QPair<uint64_t, float>(time, m->value));
+		mDoubleMsgs[topic].append(QPair<uint64_t, double>(time, m->value));
 	}
-	else if (type == "chili_msgs/Int32"){
+	else if (type == "chili_msgs/Int"){
 		type = "Int";
-		chili_msgs::Int32::ConstPtr m = msg.instantiate<chili_msgs::Int32>();
+		chili_msgs::Int::ConstPtr m = msg.instantiate<chili_msgs::Int>();
 		if (!mUseRosTime) {
 			time = extractChiliMessageTime(m);
 		}
@@ -429,36 +428,33 @@ void RosBagAnnotator::extractMessage(const rosbag::MessageInstance &msg) {
 
 		mStringMsgs[topic].append(QPair<uint64_t, QString>(time, m->value.c_str()));
 	}
-	else if (type == "chili_msgs/Vector2Float32"){
+	else if (type == "chili_msgs/DoubleArray"){
 		type = "DoubleArray";
-		chili_msgs::Vector2Float32::ConstPtr m = msg.instantiate<chili_msgs::Vector2Float32>();
+		chili_msgs::DoubleArray::ConstPtr m = msg.instantiate<chili_msgs::DoubleArray>();
 		if (!mUseRosTime) {
 			time = extractChiliMessageTime(m);
 		}
 
-		QList<QVariant> data{m->x, m->y};
+		QList<QVariant> data;
+		for (auto value : m->data) {
+			data.append(value);
+		}
+
 		mDoubleArrayMsgs[topic].append(QPair<uint64_t, QList<QVariant>>(time, data));
 	}
-	else if (type == "chili_msgs/Vector2Int32"){
+	else if (type == "chili_msgs/IntArray"){
 		type = "IntArray";
-		chili_msgs::Vector2Int32::ConstPtr m = msg.instantiate<chili_msgs::Vector2Int32>();
+		chili_msgs::IntArray::ConstPtr m = msg.instantiate<chili_msgs::IntArray>();
 		if (!mUseRosTime) {
 			time = extractChiliMessageTime(m);
 		}
+		
+		QList<QVariant> data;
+		for (auto value : m->data) {
+			data.append(value);
+		}
 
-
-		QList<QVariant> data{m->x, m->y};
 		mIntArrayMsgs[topic].append(QPair<uint64_t, QList<QVariant>>(time, data));
-	}
-	else if (type == "chili_msgs/Vector3Float32"){
-		type = "DoubleArray";
-		chili_msgs::Vector3Float32::ConstPtr m = msg.instantiate<chili_msgs::Vector3Float32>();
-		if (!mUseRosTime) {
-			time = extractChiliMessageTime(m);
-		}
-
-		QList<QVariant> data{m->x, m->y, m->z};
-		mDoubleArrayMsgs[topic].append(QPair<uint64_t, QList<QVariant>>(time, data));
 	}
 	else if (type == "audio_common_msgs/AudioData") {
 		type = "Audio";

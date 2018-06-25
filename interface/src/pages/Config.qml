@@ -9,8 +9,6 @@ import ch.epfl.chili 1.0
 
 ScrollView {
 	id: root
-	// anchors.fill: parent
-
 	property var title: qsTr("Configure your annotation session")
 	property var bagAnnotator
 	property var useSeparateBag: true
