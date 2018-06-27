@@ -5,9 +5,11 @@
 
 #include <std_msgs/Bool.h>
 #include <std_msgs/Int32.h>
+#include <std_msgs/Float32.h>
 #include <std_msgs/Float64.h>
 #include <std_msgs/String.h>
 #include <std_msgs/Int32MultiArray.h>
+#include <std_msgs/Float32MultiArray.h>
 #include <std_msgs/Float64MultiArray.h>
 #include <audio_common_msgs/AudioData.h>
 
@@ -482,8 +484,13 @@ void RosBagAnnotator::extractMessage(const rosbag::MessageInstance &msg) {
 		std_msgs::Int32::ConstPtr m = msg.instantiate<std_msgs::Int32>();
 		mIntMsgs[topic].append(QPair<uint64_t, int>(time, m->data));
 	}
+	else if (type == "std_msgs/Float32") {
+		type = "Double";
+		std_msgs::Float32::ConstPtr m = msg.instantiate<std_msgs::Float32>();
+		mDoubleMsgs[topic].append(QPair<uint64_t, float>(time, m->data));
+	}
 	else if (type == "std_msgs/Float64") {
-		type = "Int";
+		type = "Double";
 		std_msgs::Float64::ConstPtr m = msg.instantiate<std_msgs::Float64>();
 		mDoubleMsgs[topic].append(QPair<uint64_t, float>(time, m->data));
 	}
@@ -500,6 +507,15 @@ void RosBagAnnotator::extractMessage(const rosbag::MessageInstance &msg) {
 			data.append(value);
 		}
 		mIntArrayMsgs[topic].append(QPair<uint64_t, QList<QVariant>>(time, data));
+	}
+	else if (type == "std_msgs/Float32MultiArray") {
+		type = "DoubleArray";
+		std_msgs::Float32MultiArray::ConstPtr m = msg.instantiate<std_msgs::Float32MultiArray>();
+		QList<QVariant> data;
+		for (auto value : m->data) {
+			data.append(value);
+		}
+		mDoubleArrayMsgs[topic].append(QPair<uint64_t, QList<QVariant>>(time, data));
 	}
 	else if (type == "std_msgs/Float64MultiArray") {
 		type = "DoubleArray";
