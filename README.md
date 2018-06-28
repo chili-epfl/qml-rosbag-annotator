@@ -22,3 +22,6 @@ mkdir build
 cd build
 make -j 8 && sudo make install
 ```
+
+### Usage
+First build and install the plugin (this directory), then build and run the interface (`interface` directory).
