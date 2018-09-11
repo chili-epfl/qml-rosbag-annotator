@@ -17,8 +17,15 @@ HEADERS += \
         rosbagannotator.h \
         imageitem.h
 
-INCLUDEPATH += /opt/ros/kinetic/include
-LIBS += -L"/opt/ros/kinetic/lib" -lrosbag_storage -lroscpp_serialization
+#Check for ROS DISTRO
+_ROSPATH = "/opt/ros/$$(ROS_DISTRO)"
+isEmpty(_ROSPATH){message("ROS DISTRO" not detected...)}
+else{
+message("/opt/ros/$$(ROS_DISTRO)")
+INCLUDEPATH += "/opt/ros/$$(ROS_DISTRO)/include"
+LIBS += -L"/opt/ros/$$(ROS_DISTRO)/lib" -lrosbag_storage -lroscpp_serialization
+}
+
 
 DISTFILES = qmldir
 
